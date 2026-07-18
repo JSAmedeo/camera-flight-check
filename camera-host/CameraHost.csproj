@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <!-- digiCamControl's native DLLs (EDSDK) are 32-bit -->
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>8.0</LangVersion>
+    <AssemblyName>CameraHost</AssemblyName>
+    <RootNamespace>CameraHost</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <!-- Canon EDSDK delivers callbacks via a Windows message pump -->
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="CameraControl.Devices">
+      <HintPath>lib\CameraControl.Devices.dll</HintPath>
+    </Reference>
+    <Reference Include="Canon.Eos.Framework">
+      <HintPath>lib\Canon.Eos.Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="PortableDeviceLib">
+      <HintPath>lib\PortableDeviceLib.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Ship every runtime dependency (managed + native EDSDK) next to the exe -->
+  <ItemGroup>
+    <None Include="lib\*.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+</Project>

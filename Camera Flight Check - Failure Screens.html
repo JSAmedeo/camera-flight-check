@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Camera Flight Check — Failure Screens</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" />
+
+<link rel="stylesheet" href="simple-styles.css" />
+
+<style>
+  html, body { margin: 0; height: 100%; background: #0a0d12; font-family: "Geist", system-ui, sans-serif; overflow: hidden; }
+  #fail-root { width: 100%; height: 100%; }
+
+  /* ===== Failure-specific tones (built on the Simple Mode palette) ===== */
+  .fr-ic--fail { background: var(--fail-soft); color: var(--fail); border-color: rgba(220,38,38,0.4); }
+  .fr-ic--warn { background: var(--warn-soft); color: var(--warn); border-color: rgba(234,179,8,0.4); }
+  .fr-right--fail { color: var(--fail); }
+  .fr-right--warn { color: var(--warn); }
+
+  .fr-status { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; }
+  .fr-status--fail { color: var(--fail); }
+  .fr-status--warn { color: var(--warn); }
+
+  .fr-badge {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; letter-spacing: -0.005em;
+  }
+  .fr-badge--warn { background: var(--warn-soft); color: var(--warn); border: 1px solid rgba(234,179,8,0.4); }
+  .fr-badge--fail { background: var(--fail-soft); color: var(--fail); border: 1px solid rgba(220,38,38,0.4); }
+
+  .fr-contacts {
+    width: 100%; max-width: 640px; margin-top: 8px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  }
+  .fr-contact {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 20px; text-align: left;
+  }
+  .fr-contact-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-2); }
+  .fr-contact-name { font-size: 15px; color: var(--text-2); margin-top: 4px; }
+  .fr-contact-phone {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 12px;
+    font-size: 20px; font-weight: 600; color: var(--text); text-decoration: none; letter-spacing: -0.01em;
+  }
+  .fr-contact-phone svg { color: var(--accent-2); }
+
+  .fr-note {
+    width: 100%; max-width: 640px; margin-top: 6px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-radius: 12px;
+    background: var(--fail-soft); border: 1px solid rgba(220,38,38,0.32);
+    color: var(--text-2); font-size: 14.5px; line-height: 1.45; text-align: left;
+  }
+  .fr-note svg { color: var(--fail); flex: 0 0 auto; }
+
+  a { color: var(--accent-2); }
+  a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div id="fail-root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="simple-failures.jsx"></script>
+
+</body>
+</html>

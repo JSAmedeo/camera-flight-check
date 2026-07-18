@@ -1,0 +1,21 @@
+{
+  "name": "camera-flight-check",
+  "productName": "Camera Flight Check",
+  "version": "1.0.1",
+  "description": "Camera pre-flight utility - daily station readiness check",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "sim": "electron . --simulate",
+    "build:host": "dotnet build camera-host -c Release",
+    "dist": "node scripts/dist.js",
+    "package": "node scripts/package.js"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-winstaller": "^5.4.4"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  }
+}

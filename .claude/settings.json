@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(npm ls *)",
+      "Bash(npx electron *)",
+      "Bash(npx --yes electron-packager *)",
+      "Bash(npx electron-packager *)",
+      "Bash(env -u ELECTRON_RUN_AS_NODE *)",
+      "Bash(dotnet *)",
+      "Bash(node *)",
+      "Bash(python *)",
+      "Bash(curl *)",
+      "Bash(printf *)",
+      "Bash(cp *)",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(file *)",
+      "Bash(xxd *)",
+      "Bash(date *)",
+      "Bash(tasklist *)",
+      "Bash(taskkill *)",
+      "Bash(where *)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" *)",
+      "Bash(/c/Windows/SysWOW64/WindowsPowerShell/v1.0/powershell.exe *)",
+      "Bash(./CameraHost.exe *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-Item *)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(Test-Path *)"
+    ]
+  }
+}

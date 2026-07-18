@@ -1,0 +1,310 @@
+// ============================================================================
+// Camera Flight Check — ALL operator-facing text lives here.
+//
+// Training materials change: edit copy in this file and reload the app —
+// no code changes needed. Rules:
+//   • Keep {placeholders} exactly as written; the app fills them in.
+//   • Text in quotes can be edited freely. Don't rename the keys (left side).
+//   • Tutorial images: drop real equipment photos into assets\tutorials\
+//     named  <cardKey>-<stepNumber>.png  (e.g. pole-1.png, strobe-3.png).
+//     Until a file exists, the app shows a placeholder telling you the name.
+// ============================================================================
+
+window.CFC_STRINGS = {
+
+  // ---- shared button/badge labels ----
+  common: {
+    start: "Start",
+    continue: "Continue",
+    back: "Back",
+    next: "Next",
+    gotIt: "Got it",
+    yes: "Yes",
+    no: "No",
+    close: "Close",
+    takePhoto: "Take Photo",
+    takingPhoto: "Taking photo…",
+    tryAgain: "Try again",
+    recheck: "Re-check",
+    set: "Set",
+    done: "Done",
+    checking: "Checking…",
+    moreInfo: "More info",
+  },
+
+  // ---- top bar ----
+  app: {
+    title: "Camera Check",
+    subtitle: "Run daily or as needed",
+    station: "Santa Set A · ",
+    stationBold: "Camera 1",
+    simulatorBadge: "Simulator",
+    getHelp: "Get help",
+  },
+
+  // ---- step dots ----
+  steps: ["Welcome", "Walk-around", "Camera", "Test photo", "Done"],
+
+  // ---- screen 1: welcome / sign-in ----
+  welcome: {
+    title: "Let's get your camera ready",
+    ledeBefore: "We'll check a few things together before your shift starts. It takes ",
+    ledeBold: "about 4 minutes",
+    ledeAfter: ".",
+    firstNameLabel: "First name",
+    firstNamePlaceholder: "First name",
+    lastNameLabel: "Last name",
+    lastNamePlaceholder: "Last name",
+    enterNameHint: "Enter your name to begin",
+  },
+
+  // ---- screen 2: walk-around ----
+  walk: {
+    title: "Quick walk-around",
+    lede: "Look at each thing at your station and tap it off when it's good.",
+    checkedOff: "checked off",
+    tutorial: {
+      eyebrow: "Quick how-to",
+      of: "of",
+      placeholderTitle: "Image coming soon",
+      placeholderHint: "To show a photo here, add this file:",
+    },
+    // Six checklist cards. Each has 3 tutorial steps (title + caption).
+    items: {
+      pole: {
+        label: "Camera is on the pole",
+        sub: "Mounted and tight",
+        steps: [
+        { title: "Clamp is tight", text: "Clamp is tight on the pole — give it a gentle wiggle, nothing moves." },
+        { title: "Camera sits vertical", text: "Grip is positioned with the camera mounted vertically." },
+        { title: "Cables have slack", text: "Cables are connected and have a little slack — no tension on the ports." }],
+      },
+      cap: {
+        label: "Lens cap is off",
+        sub: "Cap removed from the lens",
+        steps: [
+        { title: "Cap comes all the way off", text: "Lens cap is fully off — not just loose on the front." },
+        { title: "Cap goes on its hook", text: "Cap is on its hook or in the drawer, not balanced on the rig." },
+        { title: "Front of the lens is clean", text: "Front of the lens looks clean — no smudges or dust specks." }],
+      },
+      plug: {
+        label: "Camera is plugged in",
+        sub: "USB cable to the computer",
+        steps: [
+        { title: "Fully seated in the camera", text: "USB cable is fully seated in the camera — no gap at the port." },
+        { title: "Into the computer's blue port", text: "Other end is plugged into the computer's blue USB port." },
+        { title: "A little slack, not tight", text: "Cable has a little slack — not pulled tight across the pole." }],
+      },
+      strobe: {
+        label: "Strobe light is on",
+        sub: "Green light is showing",
+        steps: [
+        { title: "Power switch flipped ON", text: "Power switch on the back of the strobe is flipped ON." },
+        { title: "Green light, not red", text: "Green \"ready\" light is showing — not red and not blinking." },
+        { title: "Modeling lamp dial to OFF", text: "Modeling lamp dial is set to OFF so it doesn't wash out the photo." }],
+      },
+      back: {
+        label: "Backdrop looks good",
+        sub: "Straight, no wrinkles",
+        steps: [
+        { title: "Hangs straight", text: "Backdrop hangs straight — not pulled to one side." },
+        { title: "No wrinkles where guests stand", text: "No visible wrinkles or folds in the middle 6 ft (where guests stand)." },
+        { title: "Bottom edge tucked under the mat", text: "Bottom edge is tucked smoothly under the floor mat." }],
+      },
+      floor: {
+        label: "Floor is clear",
+        sub: "No bags or loose cables",
+        steps: [
+        { title: "No bags or personal items", text: "No bags, jackets, or personal items inside the photo area." },
+        { title: "No cables where guests walk", text: "No loose cables crossing where guests will walk or stand." },
+        { title: "Mat is flat — no curled corners", text: "Floor mat is flat and clean — no curled corners." }],
+      },
+    },
+  },
+
+  // ---- screen 3: camera check + grey card ----
+  camera: {
+    detect: {
+      title: "Checking your camera…",
+      lede: "Hang tight — we're making sure the camera is hooked up.",
+      lookingLabel: "Looking for your camera…",
+      lookingSub: "Checking the USB connection…",
+      foundLabel: "Found your camera",
+      settingsLoadingLabel: "Reading camera settings…",
+      settingsLoadingSub: "Getting current setup from the camera…",
+      settingsLoadedLabel: "Camera settings loaded",
+      settingsLoadedSub: "Mode {mode} · ready to calibrate",
+      notFoundTitle: "We can't find the camera",
+      notFoundBody: "No camera found. Check that the USB cable is plugged in and the camera is turned ON, then try again.",
+      unavailable: "Camera system is not available in this window.",
+    },
+    shoot: {
+      title: "Now let's calibrate the camera settings.",
+      ledeBefore: "Ask the character to hold up the ",
+      ledeGreyCard: "grey card",
+      ledeAfter: ". We'll take a photo and use the card to balance the camera.",
+      tip1: "Hand the grey card to Santa/Bunny.",
+      tip2: "Have them hold it flat against their chest, facing the camera.",
+      tip3: "When they're ready, take the photo.",
+      photoPlaceholder: "The photo will appear here",
+      refreshSettings: "Refresh settings",
+      refreshing: "Refreshing…",
+      readFailWarn: "We couldn't read the camera's settings yet. Press Re-check — if it keeps happening, unplug and replug the USB cable.",
+      autoModeWarnBefore: "The camera is in ",
+      autoModeWarnAuto: "Auto",
+      autoModeWarnMiddle: " mode, so we can't adjust its settings. Turn the top mode dial to ",
+      autoModeWarnDial: "M",
+      autoModeWarnAfter: ", then re-check.",
+    },
+    select: {
+      title: "Select the grey card",
+      titleBusy: "Got it — adjusting…",
+      ledeBefore: "Drag a box over the ",
+      ledeGreyCard: "grey card",
+      ledeAfter: " in the photo. A single tap works too.",
+      ledeBusy: "Hang tight — we're using that area to balance the camera.",
+      pill: "Drag a box over the grey card",
+      balancing: "Balancing camera…",
+      check1Title: "Stay inside the card",
+      check1Text: "Keep the box on the grey area only — no suit or backdrop.",
+      check2Title: "Avoid shadows and fingers",
+      check2Text: "Skip dark edges or hands holding the card.",
+      check3Title: "Wrong photo?",
+      check3Text: "Go back to retake it with the card in view.",
+      retakePhoto: "Retake photo",
+    },
+    applied: {
+      title: "Your camera is ready",
+      lede: "We used the grey card to measure the photo — here's what we found and what we changed.",
+      foundHead: "What we found",
+      fixedHead: "What we fixed",
+      // measurements
+      brightnessOnTarget: "Brightness was right on target.",
+      brightnessWithin: "Brightness was about {n} stop {dir} — within the good range, no change needed.",
+      brightnessIssue: "The photo was about {n} stop{s} too {dir}.",
+      dirBright: "bright",
+      dirDark: "dark",
+      colorsClipped: "The card was too bright to judge color reliably — no color change made.",
+      colorsGood: "Colors look good.",
+      colorsLeaned: "Colors leaned {strength}{cast}.",
+      strengthStrong: "strongly ",
+      strengthSlight: "slightly ",
+      castWarm: "warm (orange)",
+      castCool: "cool (blue)",
+      // fixes
+      wbLabel: "White balance",
+      wbChange: "Was {from} → changed to {to} to remove the {cast} cast",
+      isoLabel: "ISO (brightness)",
+      isoChange: "Was {from} → changed to {to} (about {n} stop{s} {dir})",
+      isoDirDarker: "darker",
+      isoDirBrighter: "brighter",
+      apertureLabel: "Aperture",
+      apertureChange: "Was f/{from} → stopped down to f/{to} for the remaining brightness",
+      castNotFixedLabel: "Color cast — not fixed",
+      castNotFixed: "White balance is already at the {limit} preset this camera offers ({wb}). If photos still look {look}, check the set lighting or flag it to your lead.",
+      limitWarmest: "warmest",
+      limitCoolest: "coolest",
+      lookBlue: "blue",
+      lookOrange: "orange",
+      brightnessNotFixedLabel: "Brightness — not fixed",
+      brightnessNotFixed: "The camera is already at its limit for this adjustment — flag it to your lead.",
+      noChangesLabel: "No changes needed",
+      noChanges: "The grey card looked good — your settings were already correct",
+      rejectedLabel: "Couldn't apply {key}",
+      rejected: "The camera refused {key} = {value} — check the mode dial",
+      refreshFailed: "The camera was busy after applying — values shown are what was sent. They'll refresh on the next photo.",
+      redoGreyCard: "Redo grey card",
+    },
+    stats: {
+      model: "Model",
+      mode: "Mode",
+      fstop: "F-stop",
+      shutter: "Shutter",
+      iso: "ISO",
+      wb: "White balance",
+      quality: "Image quality",
+      sdCard: "SD card",
+      cardFreeOf: "{free} free of {total}",
+      cardShots: " · ≈{shots} shots",
+      shotsOnly: "≈{shots} shots left",
+    },
+  },
+
+  // ---- screen 4: test photo + guided QA ----
+  testPhoto: {
+    aimTitle: "Take a test photo",
+    aimLede: "Take a test photo for upload to the Quality Control Dashboard.",
+    retakeTitle: "Take another test photo",
+    retakeLede: "We adjusted the camera — take a fresh shot to check the fix.",
+    photoPlaceholder: "The test photo will appear here",
+    photoTakenPill: "Photo taken",
+    setup1Title: "Remove Grey Card",
+    setup1Text: "Position character naturally.",
+    setup2Title: "Leave headroom",
+    setup2Text: "A small gap above the chair back, not cropping it.",
+    setup3Title: "Check the lighting",
+    setup3Text: "Strobe should fire when you tap the button.",
+    adjustedNote: "Settings adjusted ({changes}) — take another test photo.",
+    atLimitNote: "The camera is already at its limit for that adjustment — take another photo and re-check.",
+    reviewTitle: "Check the photo",
+    checksPassed: "checks passed",
+    checksOf: "of",
+    takeItAgain: "Take it again",
+    looksGood: "Looks good",
+    change: "Change",
+    q1Title: "Is the character centered?",
+    q1Sub: "Use the dotted guide — the character and chair should sit inside it.",
+    q1Help: "Adjust the camera on the pole until the character sits inside the dotted guide, then take another photo.",
+    q2Title: "Is the photo crisp and not blurry?",
+    q2Sub: "Look closely at the face and suit trim — details should be sharp.",
+    q2HelpBefore: "Check the auto focus: the lens switch should be on ",
+    q2HelpAF: "AF",
+    q2HelpAfter: ", and nothing should block the lens. Half-press the shutter to refocus, then retake.",
+    q3Title: "Do the colors look right?",
+    q3Sub: "Reds should be rich, whites white — not too red or too blue.",
+    takeAnotherPhoto: "Take another photo",
+    colorYes: "Yes",
+    colorTooBright: "Too bright",
+    colorTooDark: "Too dark",
+    colorWashedOut: "Washed out",
+    colorOverSaturated: "Over saturated",
+    colorFixHelp: "We'll adjust the camera for you, then you'll take another test photo.",
+    adjustAndRetake: "Adjust camera & retake",
+    adjusting: "Adjusting…",
+  },
+
+  // ---- screen 5: done ----
+  done: {
+    title: "You're all set!",
+    lede: "Your station is ready. Have a great shift, {name}.",
+    fallbackName: "there",
+    result1: "Station looks good",
+    result2: "Camera works and is set up correctly",
+    result3: "Test photo turned out well",
+    finishedIn: "Finished in",
+    minutes: "min",
+    seconds: "sec",
+    startOver: "Start over",
+    closeAndOpenRps: "Close Utility / Open RPS",
+    launching: "Opening Photo App…",
+  },
+
+  // ---- help modal ----
+  help: {
+    title: "Need help?",
+    bodyLine1: "For operational questions or anything you're not sure about, contact your local or district manager.",
+    bodyLine2: "For technical issues, contact the support helpdesk.",
+    contact1Eyebrow: "Local Manager",
+    contact1Name: "",
+    contact1Phone: "(555) 123-4567",
+    contact1Tel: "+15551234567",
+    contact2Eyebrow: "District Manager",
+    contact2Name: "Alex Rivera",
+    contact2Phone: "(555) 987-6543",
+    contact2Tel: "+15559876543",
+    contact3Eyebrow: "Support Helpdesk",
+    contact3Name: "Technical issues",
+    contact3Phone: "1 (800) 555-0199",
+    contact3Tel: "+18005550199",
+  },
+};
