@@ -76,6 +76,10 @@ All operator-facing copy moved to `strings.js` (`window.CFC_STRINGS`) — screen
 - `assets/` — SVG-rendered stand-in photos + simulator captures (warm/neutral)
 - `Camera Flight Check - Failure Screens.html` + `simple-failures.jsx` — designed failure states, not yet integrated
 
+## Repository
+
+Private GitHub repo since 2026-07-17: **https://github.com/JSAmedeo/camera-flight-check**. `main` = field-validated states; feature branches for risky work (`nikon-support` opened for Nikon hardware debugging). Vendored binaries (`camera-host/lib/`, `vendor/`) are committed deliberately — they're not on any package registry. `dist/`, `build/`, `node_modules/`, and `camera-host/bin|obj` are ignored; rebuild artifacts with `npm run package`.
+
 ## PhotoFlow Convergence (strategic, decided 2026-07-14 sanity check)
 
 PhotoFlow Desktop (sibling repo) is Tauri v2 + React 18 + TypeScript + Vite and is the user's main operational app; this utility may become a module of it. Assessment: **`CameraHost.exe` and the correction math transfer unchanged** (helper becomes a Tauri sidecar); the Electron shell and Babel-runtime JSX would be discarded/ported (~3–5 days mechanical). Consequence: treat Electron as scaffolding — validate hardware in it, don't polish it further. Open decision (user's): merge into PhotoFlow vs. remain a separate pre-RPS utility. Related synergy: PhotoFlow's Python enhancement worker corrects photos post-capture against a reference profile; a good grey-card capture could seed that profile.

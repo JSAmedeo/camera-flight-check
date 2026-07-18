@@ -24,7 +24,7 @@ Stop and confirm with the user before:
 - Deleting files or directories that may contain user work (killing processes is fine; deleting their data is not)
 - Architectural changes (switching desktop shell, replacing the camera stack)
 - Changing settings **on the physical camera** beyond what the grey-card/QA flows themselves do
-- Pushing to remote repositories (none configured yet)
+- Force-pushing or rewriting history on the remote (repo: https://github.com/JSAmedeo/camera-flight-check, private). Normal commits/pushes on feature branches are fine; commit at meaningful checkpoints with descriptive messages. `main` holds field-validated states; feature work happens on branches (current: `nikon-support`)
 
 ## User Working Style
 
