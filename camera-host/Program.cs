@@ -6,7 +6,7 @@
 //
 // Commands:
 //   detect                       -> { connected, model, serial }
-//   settings                     -> { model, battery, iso, shutter, aperture, wb,
+//   settings                     -> { model, battery, iso, shutter, aperture, wb, quality,
 //                                     isoValues, shutterValues, apertureValues, wbValues }
 //   capture  {savePath}          -> { file }
 //   set      {iso?, shutter?, aperture?, wb?} -> { applied: {..}, rejected: {..} }
@@ -22,9 +22,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using CameraControl.Devices;
-using CameraControl.Devices.Canon;
 using CameraControl.Devices.Classes;
-using Canon.Eos.Framework.Internal.SDK;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -59,7 +57,6 @@ namespace CameraHost
             _manager.PhotoCaptured += OnPhotoCaptured;
             _manager.CameraConnected += d =>
             {
-                _storageCached = false; // new session → re-read card info
                 Log($"Camera connected: {d.DeviceName} via {d.GetType().Name} (IsConnected={d.IsConnected})");
                 // Keep the best real camera: vendor-driver devices beat generic ones,
                 // webcams (WebCameraDevice) are never eligible.
@@ -164,11 +161,18 @@ namespace CameraHost
             WaitForInit(dev);
             // Property values fill in asynchronously after init (Canon fires an event
             // per property) — IsConnected alone isn't enough. A populated ISO table is
-            // the reliable "settings are loaded" signal (present even in Auto mode).
+            // the reliable "settings are loaded" signal (present even in Auto mode), but
+            // on a Nikon D3400 (NikonD600Base driver) ISO's table arrives ~6s before
+            // WB/battery/mode/quality do — gating on ISO alone read WB as null while the
+            // camera was actually in a valid mode (A), which the UI mistakes for a
+            // genuine Auto-dial warning. Wait for both; a true Auto-dial body still
+            // exits via the same 12s cap since its WB table never arrives either.
             for (int waited = 0; waited < 12000; waited += 250)
             {
                 var loaded = OnPump<bool>(() =>
-                    dev.IsoNumber != null && dev.IsoNumber.Values != null && dev.IsoNumber.Values.Count > 0);
+                    dev.IsoNumber != null && dev.IsoNumber.Values != null && dev.IsoNumber.Values.Count > 0 &&
+                    dev.WhiteBalance != null && dev.WhiteBalance.Values != null && dev.WhiteBalance.Values.Count > 0 &&
+                    dev.CompressionSetting != null && dev.CompressionSetting.Values != null && dev.CompressionSetting.Values.Count > 0);
                 if (loaded) break;
                 Thread.Sleep(250);
             }
@@ -187,61 +191,7 @@ namespace CameraHost
                 shutterValues = Vals(dev.ShutterSpeed),
                 apertureValues = Vals(dev.FNumber),
                 wbValues = Vals(dev.WhiteBalance),
-                storage = GetStorageInfoCached(dev),
             });
-        }
-
-        // Card info doesn't change mid-check — read once and cache so the raw EDSDK
-        // volume calls never sit in the hot path (they can block while the camera is
-        // busy digesting a burst of property writes).
-        private static object _storageCache;
-        private static bool _storageCached;
-
-        private static object GetStorageInfoCached(ICameraDevice dev)
-        {
-            if (_storageCached) return _storageCache;
-            if (dev.IsBusy) return null; // don't poke EDSDK while a capture/write is in flight
-            var s = GetStorageInfo(dev);
-            if (s != null) { _storageCache = s; _storageCached = true; }
-            return s;
-        }
-
-        // Card capacity via raw EDSDK (Canon only — Nikon returns null for now).
-        private static object GetStorageInfo(ICameraDevice dev)
-        {
-            try
-            {
-                var canon = dev as CanonSDKBase;
-                if (canon == null || canon.Camera == null) return null;
-                var handle = canon.Camera.Handle;
-
-                uint shots = 0;
-                Edsdk.EdsGetPropertyData(handle, Edsdk.PropID_AvailableShots, 0, out shots);
-
-                ulong? freeBytes = null, totalBytes = null;
-                IntPtr vol = IntPtr.Zero;
-                if (Edsdk.EdsGetChildAtIndex(handle, 0, out vol) == 0 && vol != IntPtr.Zero)
-                {
-                    try
-                    {
-                        Edsdk.EdsVolumeInfo vi;
-                        if (Edsdk.EdsGetVolumeInfo(vol, out vi) == 0 && vi.MaxCapacity > 0)
-                        {
-                            freeBytes = vi.FreeSpaceInBytes;
-                            totalBytes = vi.MaxCapacity;
-                        }
-                    }
-                    finally { Edsdk.EdsRelease(vol); }
-                }
-
-                if (freeBytes == null && shots == 0) return null;
-                return new { shotsRemaining = shots, freeBytes, totalBytes };
-            }
-            catch (Exception ex)
-            {
-                Log("storage: " + ex.Message);
-                return null;
-            }
         }
 
         private static object Capture(string savePath)

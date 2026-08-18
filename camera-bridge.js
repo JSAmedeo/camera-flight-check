@@ -111,7 +111,6 @@ class SimulatorCamera {
       battery: Number(process.env.CFC_SIM_BATTERY || 93), // override to test battery warnings
       mode: "M",
       quality: "Fine JPEG",
-      storage: { shotsRemaining: 812, freeBytes: 24300000000, totalBytes: 31900000000 },
       iso: "800",
       shutter: "1/160",
       aperture: "5.6",

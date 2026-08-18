@@ -256,9 +256,6 @@ function planCorrections(settings, analysis) {
   return plan;
 }
 
-const fmtBytes = (b) =>
-b == null ? null : b >= 1e9 ? (b / 1e9).toFixed(1) + " GB" : Math.round(b / 1e6) + " MB";
-
 // Electron IPC wraps thrown errors in noise — show operators just the message
 const errText = (e) =>
 String(e && e.message || e).replace(/Error invoking remote method '[^']+':\s*(Error:\s*)?/g, "");
@@ -266,13 +263,6 @@ String(e && e.message || e).replace(/Error invoking remote method '[^']+':\s*(Er
 // Full camera stats panel shown on the calibration screen
 function CameraStats({ s }) {
   if (!s) return null;
-  const st = s.storage;
-  // some bodies return a sentinel for shots-remaining — only show plausible counts
-  const shots = st && st.shotsRemaining > 0 && st.shotsRemaining < 100000 ? st.shotsRemaining.toLocaleString() : null;
-  const card = !st ? null :
-  st.freeBytes != null ?
-  fmt(S.camera.stats.cardFreeOf, { free: fmtBytes(st.freeBytes), total: fmtBytes(st.totalBytes) }) + (shots ? fmt(S.camera.stats.cardShots, { shots }) : "") :
-  shots ? fmt(S.camera.stats.shotsOnly, { shots }) : null;
   const rows = [
   [S.camera.stats.model, s.model],
   [S.camera.stats.mode, s.mode],
@@ -280,8 +270,7 @@ function CameraStats({ s }) {
   [S.camera.stats.shutter, s.shutter],
   [S.camera.stats.iso, s.iso],
   [S.camera.stats.wb, s.wb],
-  [S.camera.stats.quality, s.quality],
-  [S.camera.stats.sdCard, card]];
+  [S.camera.stats.quality, s.quality]];
 
   return (
     <div className="s-stats">

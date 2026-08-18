@@ -223,10 +223,6 @@ window.CFC_STRINGS = {
       iso: "ISO",
       wb: "White balance",
       quality: "Image quality",
-      sdCard: "SD card",
-      cardFreeOf: "{free} free of {total}",
-      cardShots: " · ≈{shots} shots",
-      shotsOnly: "≈{shots} shots left",
     },
   },
 

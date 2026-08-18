@@ -6,11 +6,36 @@
 
 1. **Welcome** — operator enters first/last name (gates Start), live date/time shown; a `check_started` record is written locally for future API posting
 2. **Walk-around** — 6 tap-off physical checks (camera on pole, lens cap, USB, strobe, backdrop, floor), each with a "More info" detail modal
-3. **Camera** — detects the tethered camera, shows a full **camera stats panel** (model, mode, f-stop, shutter, ISO, WB, image quality, SD-card capacity), operator photographs the character holding an 18% grey card, drags a box over the card, and the app **corrects white balance + exposure in-camera**, then reports results as matched **"What we found" / "What we fixed"** cards — including explicit "not fixed, here's why" rows when a correction hits a hardware limit
+3. **Camera** — detects the tethered camera, shows a full **camera stats panel** (model, mode, f-stop, shutter, ISO, WB, image quality), operator photographs the character holding an 18% grey card, drags a box over the card, and the app **corrects white balance + exposure in-camera**, then reports results as matched **"What we found" / "What we fixed"** cards — including explicit "not fixed, here's why" rows when a correction hits a hardware limit
 4. **Test photo** — real capture reviewed through a **guided 3-card QA sequence**: centered? (dotted placement overlay until answered) → crisp? (No → autofocus help) → colors right? (multi-select; problem answers auto-adjust the camera and loop back to retake). Completed cards can be reopened via "Change". "Looks good" is gated on all three passing
 5. **Done** — greets the operator by name, shows real measured duration, writes `check_completed`, releases the camera USB session, and closes so RPS can attach
 
-Target hardware: Canon EOS Rebel T5–T7 (T6 and T7 validated on real hardware 2026-07-17; T5 expected to work, same support generation), plus a range of Nikon D models (definitive list still coming from the user). Cameras are on constant power (no battery gating — removed by user request).
+Target hardware: Canon EOS Rebel T5–T7 (T6 and T7 validated on real hardware 2026-07-17; T5 expected to work, same support generation), plus the Nikon D fleet below. Cameras are on constant power (no battery gating — removed by user request).
+
+**Nikon fleet inventory (from the user, 2026-08-17 — 2,669 cameras across all venues):**
+
+| Model | Count | digiCamControl coverage |
+|---|---|---|
+| D-3000 | 1,586 | generic (`NikonBase` PTP) |
+| D-3400 | 638 | generic |
+| D-5200 | 83 | dedicated (`NikonD5200`) |
+| D-90 | 58 | dedicated (`NikonD90`) |
+| D-5500 | 52 | generic |
+| D-5100 | 51 | dedicated (`NikonD5100`) |
+| D-5300 | 49 | generic |
+| D-3500 | 27 | generic |
+| D-5000 | 24 | generic |
+| D40 | 23 | dedicated (`NikonD40`) |
+| D-3100 | 18 | generic |
+| D70 | 18 | generic |
+| D-3200 | 16 | dedicated (`NikonD3200`) |
+| D-5600 | 8 | generic |
+| D-3300 | 9 | generic |
+| D-60 | 4 | dedicated (`NikonD60`) |
+| D70S | 3 | generic |
+| D-50 | 2 | generic |
+
+Only ~8.8% of the fleet (D40/D60/D90/D3200/D5100/D5200) gets one of the DLL's 24+ per-model classes — the other ~91%, including the two largest buckets (D-3000, D-3400), falls to the generic `NikonBase` PTP fallback. **That fallback path is the one that matters most** — it's what nearly all stations are actually running. D70/D70S are 2004–2005-era bodies; low count (21 units) but the oldest PTP implementation in the fleet, worth a quick sanity check even though it's not worth deep investment. Recommend requesting a D-3000 or D-3400 first for hardware testing, since validating those covers the bulk of real deployments.
 
 ## Origin and Design Source
 
@@ -23,7 +48,7 @@ The UI was designed in Claude Design (claude.ai/design), project id `af76a28a-f0
 | 1 | Import Simple Mode design, run as local HTML | **COMPLETE** (2026-07-13) |
 | 2 | Standalone Windows desktop app (Electron, offline, frameless floating window) | **COMPLETE** (2026-07-13) |
 | 3 | Real camera functionality (detect / capture / grey-card correction), simulator-verified | **COMPLETE** (2026-07-14) |
-| 4 | Hardware + field validation (Canon), operator UX build-out, deployable packaging | **IN PROGRESS** — T6 + T7 fully working incl. field grey-card runs; real-person test next; Nikon untested (library ships 24+ Nikon D classes + NikonBase PTP fallback; SD-capacity + live validation pending) |
+| 4 | Hardware + field validation (Canon), operator UX build-out, deployable packaging | **IN PROGRESS** — T6 + T7 fully working incl. field grey-card runs; real-person test next; Nikon untested (library ships 24+ Nikon D classes + NikonBase PTP fallback; fleet inventory known, hardware validation pending) |
 | 5 | (Candidate) PhotoFlow Desktop convergence, failure screens, QC upload, RPS launch, API posting | TBD |
 
 ### Phase 2 details
@@ -88,7 +113,7 @@ PhotoFlow Desktop (sibling repo) is Tauri v2 + React 18 + TypeScript + Vite and 
 
 1. **Real-person grey-card test** (T7 on M) — collect: WB preset chosen, over/under-correction of the retake (tunes the 0.6 warmth exponent), WB vocabulary
 2. **"Strongly cool on WB Shade" anomaly** from field runs — Shade should skew warm, not cool. 2026-07-15 mitigation: tolerances raised (EV 1.0 stop per user, cast 0.3/0.6) and a clipping guard added (≥20% near-clipped pixels → "too bright to judge color", WB untouched) — near-clipping was the prime suspect for phantom casts (field card read bright even at f/14 ISO 100). If false casts persist below clipping, persist calibration photos next to the run log for debugging
-3. **Nikon validation** — completely untested; supported-model list still pending; needs a storage-info PTP path (`storage` returns null); check digiCamControl coverage per model
+3. **Nikon validation** — first real-hardware session 2026-08-17, D3400 on the bench. Fixed: settings-read race (see Phase 4 details) — `settings` now waits for WB + image-quality, not just ISO, before returning; confirmed correct on real hardware (mode A, WB Auto, no false "Auto dial" warning). Also corrected an assumption: the D3400 loads via `NikonD600Base`, not the raw generic `NikonBase` fallback — likely true for other D3xxx/D5xxx bodies too, needs confirming per model. **Blocked:** `capture` fails with "Device not ready" — traced via IL inspection to `NikonBase.DeviceReady()` throwing on a nonzero Nikon device-status code; inserting/formatting a card didn't resolve it, and the session ended when the camera's battery died mid-diagnosis (USB link had already dropped, `detect` was returning `connected:false`). Next session: charge the D3400, re-run `detect`/`settings`/`capture` from cold power-on, and check whether the physical shutter button fires normally (isolates a camera-state issue from a PTP/tether-session issue) before assuming a code fix is needed.
 4. **WB calibration** — tune exponent + `WB_KELVIN` from field captures; consider Kelvin WB (`Color Temperature` mode) where bodies support it; Picture-Style/saturation control would improve the "over saturated" QA fix
 5. **Dev HUD** — remove/hide/gate before operator rollout (still bypasses step gates)
 6. **Failure screens** — wire `simple-failures.jsx` designs into real failure paths
