@@ -30,6 +30,12 @@ const SI = {
       <path d="M14 6l7 6-7 6" />
     </svg>,
 
+  gear: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3.5v2.4M12 18.1v2.4M5.4 6.6l1.7 1.7M16.9 15.7l1.7 1.7M3.5 12h2.4M18.1 12h2.4M5.4 17.4l1.7-1.7M16.9 8.3l1.7-1.7" />
+    </svg>,
+
   camera: (p = {}) =>
   <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
       <path d="M8 18h9l4-6h22l4 6h9v32H8z" />
@@ -307,7 +313,7 @@ function SettingsStrip({ s }) {
 // ============================================================
 // Top bar
 // ============================================================
-function SimpleTop({ openHelp }) {
+function SimpleTop({ openHelp, openSettings }) {
   const [simulated, setSimulated] = React.useState(false);
   React.useEffect(() => {
     if (cam) cam.mode().then((m) => setSimulated(m === "simulator")).catch(() => {});
@@ -331,6 +337,9 @@ function SimpleTop({ openHelp }) {
         {simulated && <span className="s-sim-badge">{S.app.simulatorBadge}</span>}
       </div>
       <div className="s-top-actions">
+        <button className="s-win-btn" onClick={openSettings} aria-label={S.app.settings} title={S.app.settings}>
+          <SI.gear size={17} />
+        </button>
         <button className="s-help-btn" onClick={openHelp}>
           <SI.help size={16} /> {S.app.getHelp}
         </button>
@@ -728,7 +737,7 @@ function WalkInfoModal({ item, onClose }) {
 // Screen 3 — Camera check (real detect → capture → grey-card region → apply)
 // Stages: "auto" -> "shoot" -> "select" -> "applied"
 // ============================================================
-function ScreenCamera({ onNext, onBack, onSkip }) {
+function ScreenCamera({ onNext, onBack, onSkip, settings }) {
   const [stage, setStage] = React.useState("auto");
   const [detected, setDetected] = React.useState(null); // {model, serial}
   const [camSettings, setCamSettings] = React.useState(null);
@@ -1371,16 +1380,28 @@ function TapMarker({ x, y }) {
 //   3. colors ok? (multi-select; problems auto-adjust the camera + retake)
 // ============================================================
 
-// Dotted seated-person guide overlaid on the photo while centering is unconfirmed
-function CenterGuide() {
+// Dotted seated-person guide overlaid on the photo while centering is
+// unconfirmed. Admin-adjustable via Settings: offsetXPct/offsetYPct nudge
+// position, scalePct resizes, and customSrc swaps the built-in SVG for an
+// uploaded image entirely — all three as a CSS transform on the outer
+// element so the tuned default artwork itself never needs to change.
+function CenterGuide({ offsetXPct = 0, offsetYPct = 0, scalePct = 100, customSrc = null }) {
+  const wrapStyle = {
+    position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none",
+    transform: `translate(${offsetXPct}%, ${offsetYPct}%) scale(${scalePct / 100})`,
+  };
+
+  if (customSrc) {
+    return <img src={customSrc} alt="" style={{ ...wrapStyle, objectFit: "contain" }} />;
+  }
+
   const stroke = {
     fill: "rgba(94,234,212,0.05)", stroke: "#5eead4", strokeWidth: 2,
     strokeDasharray: "3 2.5", vectorEffect: "non-scaling-stroke",
     strokeLinecap: "round", strokeLinejoin: "round"
   };
   return (
-    <svg viewBox="0 0 100 150" preserveAspectRatio="none"
-      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+    <svg viewBox="0 0 100 150" preserveAspectRatio="none" style={wrapStyle}>
       {/* head */}
       <ellipse cx="50" cy="58" rx="14" ry="15" {...stroke} />
       {/* 3/4 bust: broad shoulders, torso runs off the bottom of the frame */}
@@ -1399,6 +1420,12 @@ function CenterGuide() {
 
 }
 
+// file:// URL for a local overlay image path (Windows paths need forward
+// slashes and a triple slash after the scheme).
+function toFileUrl(p) {
+  return p ? "file:///" + p.replace(/\\/g, "/") : null;
+}
+
 // EV nudges for each color complaint (strobe-lit set: exposure moves via ISO,
 // aperture only ever stops down). Values are starting points — tune in field.
 const COLOR_FIX_EV = { bright: -1, dark: 1, washed: -2 / 3, saturated: -1 / 3 };
@@ -1415,7 +1442,8 @@ const COLOR_FIX_LABELS = () => ({
   saturated: S.testPhoto.colorOverSaturated
 });
 
-function ScreenTestPhoto({ onNext, onBack, onSkip }) {
+function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
+  const overlay = settings.overlay || {};
   const [stage, setStage] = React.useState("aim"); // "aim" | "review"
   const [photo, setPhoto] = React.useState(null);
   const [camSettings, setCamSettings] = React.useState(null);
@@ -1621,7 +1649,13 @@ function ScreenTestPhoto({ onNext, onBack, onSkip }) {
                 src={photo}
                 alt=""
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              {centered !== true && <CenterGuide />}
+              {centered !== true &&
+              <CenterGuide
+                offsetXPct={overlay.offsetXPct}
+                offsetYPct={overlay.offsetYPct}
+                scalePct={overlay.scalePct}
+                customSrc={toFileUrl(overlay.customImagePath)} />
+              }
               <div className="s-photo-pill s-photo-pill--taken">
                 <SI.check size={14} /> {S.testPhoto.photoTakenPill}
               </div>
@@ -1863,6 +1897,223 @@ function HelpModal({ onClose }) {
 
 }
 
+// Fallback vocabulary shown when no camera is connected to ask its own list —
+// covers both Canon and Nikon preset names (see WB_KELVIN above).
+const WB_VOCAB_FALLBACK = Object.keys(WB_KELVIN).concat(["Auto", "Custom"]);
+
+// ============================================================
+// Admin Settings screen (gear icon in the header) — location/station,
+// data folder + skip-reason toggle, camera setting limits, and the
+// test-photo overlay editor. Edits a local draft; only written to disk
+// (via settings:save) and applied to the running app on "Save changes".
+// ============================================================
+function SettingsScreen({ settings, onSave, onClose }) {
+  const T = S.settingsScreen;
+  const [draft, setDraft] = React.useState(settings);
+  const [saving, setSaving] = React.useState(false);
+  const [camWb, setCamWb] = React.useState(null); // wbValues from a connected camera, if any
+
+  React.useEffect(() => {
+    if (cam) {
+      cam.settings()
+        .then((s) => setCamWb((s.wbValues || []).length ? s.wbValues : null))
+        .catch(() => {});
+    }
+  }, []);
+
+  const wbOptions = camWb || WB_VOCAB_FALLBACK;
+  const allowedWb = draft.cameraLimits.allowedWb; // null = every option allowed
+
+  const setField = (group, key, value) => {
+    setDraft((d) => key == null ? { ...d, [group]: value } : { ...d, [group]: { ...d[group], [key]: value } });
+  };
+
+  const toggleWb = (name) => {
+    const current = allowedWb || wbOptions;
+    const next = current.includes(name) ? current.filter((w) => w !== name) : [...current, name];
+    setField("cameraLimits", "allowedWb", next.length === wbOptions.length ? null : next);
+  };
+
+  const numOrNull = (v) => v === "" ? null : Number(v);
+
+  const pickFolder = async () => {
+    if (!(window.cfc && window.cfc.settings)) return;
+    const dir = await window.cfc.settings.pickFolder();
+    if (dir) setField("dataDir", null, dir);
+  };
+
+  const pickImage = async () => {
+    if (!(window.cfc && window.cfc.settings)) return;
+    const p = await window.cfc.settings.pickImage();
+    if (p) setField("overlay", "customImagePath", p);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    let result = draft;
+    if (window.cfc && window.cfc.settings) {
+      try { result = await window.cfc.settings.save(draft); } catch {}
+    }
+    setSaving(false);
+    onSave(result);
+    onClose();
+  };
+
+  return (
+    <div className="s-info" onClick={onClose}>
+      <div className="s-settings-card s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <button className="s-info-close" onClick={onClose} aria-label={S.common.close}>
+          <SI.close size={18} />
+        </button>
+        <h2 className="s-settings-title">{T.title}</h2>
+
+        <div className="s-settings-body">
+          <section className="s-settings-section">
+            <h3>{T.locationTitle}</h3>
+            <div className="s-form-row">
+              <div className="s-field">
+                <label>{T.locationLabel}</label>
+                <input
+                  className="s-input"
+                  value={draft.location.label}
+                  placeholder={T.locationPlaceholder}
+                  onChange={(e) => setField("location", "label", e.target.value)} />
+              </div>
+              <div className="s-field">
+                <label>{T.stationLabel}</label>
+                <input
+                  className="s-input"
+                  value={draft.location.station}
+                  placeholder={T.stationPlaceholder}
+                  onChange={(e) => setField("location", "station", e.target.value)} />
+              </div>
+            </div>
+          </section>
+
+          <section className="s-settings-section">
+            <h3>{T.dataTitle}</h3>
+            <div className="s-field">
+              <label>{T.dataFolderLabel}</label>
+              <div style={{ display: "flex", gap: 10 }}>
+                <input className="s-input" style={{ flex: 1 }} value={draft.dataDir} readOnly />
+                <button className="s-btn s-btn--ghost" onClick={pickFolder}>{T.changeFolder}</button>
+              </div>
+            </div>
+            <label className="s-settings-toggle">
+              <input
+                type="checkbox"
+                checked={!!draft.skipReasonPrompt}
+                onChange={(e) => setField("skipReasonPrompt", null, e.target.checked)} />
+              {T.skipPromptToggle}
+            </label>
+          </section>
+
+          <section className="s-settings-section">
+            <h3>{T.limitsTitle}</h3>
+            <div className="s-field">
+              <label>{T.limitsWbLabel}</label>
+              <div className="s-qa-chips">
+                {wbOptions.map((name) => {
+                  const on = allowedWb == null || allowedWb.includes(name);
+                  return (
+                    <button key={name} className={`s-qa-chip ${on ? "s-qa-chip--on" : ""}`} onClick={() => toggleWb(name)}>
+                      {name}
+                    </button>);
+
+                })}
+              </div>
+            </div>
+            <div className="s-form-row" style={{ marginTop: 14 }}>
+              <div className="s-field">
+                <label>{T.limitsIsoMin}</label>
+                <input
+                  className="s-input" type="number" placeholder="100"
+                  value={draft.cameraLimits.isoMin ?? ""}
+                  onChange={(e) => setField("cameraLimits", "isoMin", numOrNull(e.target.value))} />
+              </div>
+              <div className="s-field">
+                <label>{T.limitsIsoMax}</label>
+                <input
+                  className="s-input" type="number" placeholder="25600"
+                  value={draft.cameraLimits.isoMax ?? ""}
+                  onChange={(e) => setField("cameraLimits", "isoMax", numOrNull(e.target.value))} />
+              </div>
+            </div>
+            <div className="s-form-row" style={{ marginTop: 14 }}>
+              <div className="s-field">
+                <label>{T.limitsApertureMin}</label>
+                <input
+                  className="s-input" type="number" step="0.1" placeholder="4.0"
+                  value={draft.cameraLimits.apertureMin ?? ""}
+                  onChange={(e) => setField("cameraLimits", "apertureMin", numOrNull(e.target.value))} />
+              </div>
+              <div className="s-field">
+                <label>{T.limitsApertureMax}</label>
+                <input
+                  className="s-input" type="number" step="0.1" placeholder="16.0"
+                  value={draft.cameraLimits.apertureMax ?? ""}
+                  onChange={(e) => setField("cameraLimits", "apertureMax", numOrNull(e.target.value))} />
+              </div>
+            </div>
+          </section>
+
+          <section className="s-settings-section">
+            <h3>{T.overlayTitle}</h3>
+            <div className="s-settings-overlay-row">
+              <div className="s-settings-overlay-preview">
+                <CenterGuide
+                  offsetXPct={draft.overlay.offsetXPct}
+                  offsetYPct={draft.overlay.offsetYPct}
+                  scalePct={draft.overlay.scalePct}
+                  customSrc={toFileUrl(draft.overlay.customImagePath)} />
+              </div>
+              <div className="s-settings-overlay-controls">
+                <div className="s-field">
+                  <label>{T.overlayOffsetX} ({draft.overlay.offsetXPct}%)</label>
+                  <input
+                    type="range" min="-30" max="30"
+                    value={draft.overlay.offsetXPct}
+                    onChange={(e) => setField("overlay", "offsetXPct", Number(e.target.value))} />
+                </div>
+                <div className="s-field">
+                  <label>{T.overlayOffsetY} ({draft.overlay.offsetYPct}%)</label>
+                  <input
+                    type="range" min="-30" max="30"
+                    value={draft.overlay.offsetYPct}
+                    onChange={(e) => setField("overlay", "offsetYPct", Number(e.target.value))} />
+                </div>
+                <div className="s-field">
+                  <label>{T.overlayScale} ({draft.overlay.scalePct}%)</label>
+                  <input
+                    type="range" min="50" max="150"
+                    value={draft.overlay.scalePct}
+                    onChange={(e) => setField("overlay", "scalePct", Number(e.target.value))} />
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button className="s-btn s-btn--ghost" onClick={pickImage}>{T.overlayUpload}</button>
+                  <button
+                    className="s-btn s-btn--ghost"
+                    disabled={!draft.overlay.customImagePath}
+                    onClick={() => setField("overlay", "customImagePath", null)}>
+                    {T.overlayReset}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="s-tut-foot">
+          <button className="s-btn s-btn--ghost" onClick={onClose}>{T.cancel}</button>
+          <button className="s-btn s-btn--primary" disabled={saving} onClick={save}>
+            {saving ? T.saving : T.save}
+          </button>
+        </div>
+      </div>
+    </div>);
+
+}
+
 // ============================================================
 // Launch flash
 // ============================================================
@@ -1917,7 +2168,14 @@ function SimpleApp() {
   const [help, setHelp] = React.useState(false);
   const [operator, setOperator] = React.useState({ firstName: "", lastName: "" });
   const [run, setRun] = React.useState(null); // { id, startedAt }
-  const [settings, setSettings] = React.useState({ skipReasonPrompt: true });
+  const [settings, setSettings] = React.useState({
+    location: { label: "", station: "Camera 1" },
+    dataDir: "",
+    skipReasonPrompt: true,
+    cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
+    overlay: { offsetXPct: 0, offsetYPct: 0, scalePct: 100, customImagePath: null },
+  });
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [skipPrompt, setSkipPrompt] = React.useState(null); // { screenKey, screenLabel } while the reason modal is open
   const scale = useScale(STAGE_W, STAGE_H);
 
@@ -1997,8 +2255,8 @@ function SimpleApp() {
     switch (step) {
       case 1:return <ScreenWelcome operator={operator} setOperator={setOperator} onStart={startCheck} onSkip={() => requestSkip("welcome", S.steps[0])} />;
       case 2:return <ScreenWalkAround checked={walkChecked} setChecked={setWalkChecked} onNext={next} onBack={back} onSkip={() => requestSkip("walkaround", S.steps[1])} />;
-      case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} />;
-      case 4:return <ScreenTestPhoto onNext={next} onBack={back} onSkip={() => requestSkip("testphoto", S.steps[3])} />;
+      case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} settings={settings} />;
+      case 4:return <ScreenTestPhoto onNext={next} onBack={back} onSkip={() => requestSkip("testphoto", S.steps[3])} settings={settings} />;
       case 5:return <ScreenDone onRestart={restart} operator={operator} run={run} />;
       default:return null;
     }
@@ -2017,9 +2275,15 @@ function SimpleApp() {
           overflow: "hidden"
         }}>
           <div className="s-app">
-            <SimpleTop openHelp={() => setHelp(true)} />
+            <SimpleTop openHelp={() => setHelp(true)} openSettings={() => setSettingsOpen(true)} />
             {renderScreen()}
             {help && <HelpModal onClose={() => setHelp(false)} />}
+            {settingsOpen &&
+            <SettingsScreen
+              settings={settings}
+              onSave={(next) => setSettings(next)}
+              onClose={() => setSettingsOpen(false)} />
+            }
             {skipPrompt &&
             <SkipReasonModal
               screenLabel={skipPrompt.screenLabel}

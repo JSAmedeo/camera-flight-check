@@ -43,6 +43,35 @@ window.CFC_STRINGS = {
     confirm: "Skip this screen",
   },
 
+  // ---- admin settings screen (gear icon) ----
+  settingsScreen: {
+    title: "Settings",
+    cancel: "Cancel",
+    save: "Save changes",
+    saving: "Saving…",
+    locationTitle: "Location & station",
+    locationLabel: "Location",
+    locationPlaceholder: "e.g. Santa Set A",
+    stationLabel: "Station",
+    stationPlaceholder: "e.g. Camera 1",
+    dataTitle: "Data & logging",
+    dataFolderLabel: "Local data folder",
+    changeFolder: "Change folder…",
+    skipPromptToggle: "Prompt for a reason when skipping",
+    limitsTitle: "Camera limits",
+    limitsWbLabel: "Allowed white balance presets",
+    limitsIsoMin: "ISO min",
+    limitsIsoMax: "ISO max",
+    limitsApertureMin: "Aperture min (f/)",
+    limitsApertureMax: "Aperture max (f/)",
+    overlayTitle: "Test-photo overlay",
+    overlayOffsetX: "Horizontal offset",
+    overlayOffsetY: "Vertical offset",
+    overlayScale: "Scale",
+    overlayUpload: "Upload image…",
+    overlayReset: "Reset to default",
+  },
+
   // ---- top bar ----
   app: {
     title: "Camera Check",
@@ -51,6 +80,7 @@ window.CFC_STRINGS = {
     stationBold: "Camera 1",
     simulatorBadge: "Simulator",
     getHelp: "Get help",
+    settings: "Settings",
   },
 
   // ---- step dots ----

@@ -272,18 +272,6 @@
   font-weight: 500;
 }
 .s-btn--back:hover { background: var(--card); color: var(--text); }
-/* Deliberately the quietest button on the screen — available for busy staff
-   without competing with Back or the primary action for attention. */
-.s-btn--skip {
-  height: 52px;
-  padding: 0 16px;
-  background: transparent;
-  border-color: transparent;
-  color: var(--dim);
-  font-size: 15px;
-  font-weight: 500;
-}
-.s-btn--skip:hover { background: var(--card); color: var(--muted); }
 .s-btn[disabled] {
   opacity: 0.42;
   cursor: not-allowed;
