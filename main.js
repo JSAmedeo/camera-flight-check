@@ -56,12 +56,17 @@ function setupSettings() {
   ipcMain.handle("settings:load", () => settings);
   ipcMain.handle("settings:save", (_e, partial) => saveSettings(partial || {}));
   ipcMain.handle("settings:hostname", () => os.hostname());
-  ipcMain.handle("settings:pickFolder", async () => {
-    const r = await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
+  // Pass the owning BrowserWindow so the native dialog is properly modal to
+  // it — without a parent, an unowned dialog can end up behind or detached
+  // from the app window, which reads as the whole app being frozen.
+  ipcMain.handle("settings:pickFolder", async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const r = await dialog.showOpenDialog(win, { properties: ["openDirectory", "createDirectory"] });
     return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
   });
-  ipcMain.handle("settings:pickImage", async () => {
-    const r = await dialog.showOpenDialog({
+  ipcMain.handle("settings:pickImage", async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const r = await dialog.showOpenDialog(win, {
       properties: ["openFile"],
       filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "svg"] }],
     });
