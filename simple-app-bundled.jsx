@@ -2141,7 +2141,7 @@ function LaunchFlash() {
   return (
     <div id="simple-launch" style={{
       position: "absolute", inset: 0,
-      background: "radial-gradient(ellipse at center, rgba(234,88,12,0.4), rgba(15,18,24,0.96) 65%)",
+      background: "radial-gradient(ellipse at center, rgba(234,88,12,0.4), rgba(23,27,36,0.96) 65%)",
       display: "grid", placeItems: "center",
       opacity: 0, pointerEvents: "none",
       transition: "opacity 0.3s ease-out",
@@ -2284,7 +2284,7 @@ function SimpleApp() {
 
   return (
     <>
-      <div style={{ position: "fixed", inset: 0, background: "#0a0d12", overflow: "hidden" }}>
+      <div style={{ position: "fixed", inset: 0, background: "#11141b", overflow: "hidden" }}>
         <div className="s-stage-frame" style={{
           width: STAGE_W, height: STAGE_H,
           position: "absolute", top: "50%", left: "50%",

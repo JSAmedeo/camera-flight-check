@@ -2,17 +2,20 @@
    Friendly, calm, one-task-per-screen. */
 
 :root {
-  --bg: #0f1218;
-  --bg-soft: #161b25;
-  --card: #1d2433;
-  --card-2: #232b3d;
-  --card-soft: #1a2030;
-  --line: #2a3346;
-  --line-soft: #232b3d;
+  /* Softened 2026-08-19 per field feedback ("too dark") — lifted the floor,
+     warmed the blue-heavy neutrals slightly, and eased the bg→text contrast
+     a touch. Still dark-first (kiosk/photo-booth feel), just less harsh. */
+  --bg: #171b24;
+  --bg-soft: #1d222d;
+  --card: #272e40;
+  --card-2: #2f3749;
+  --card-soft: #222836;
+  --line: #3a4359;
+  --line-soft: #2f3749;
 
-  --text: #f1f4f9;
-  --text-2: #c4cbd7;
-  --muted: #8e98ab;
+  --text: #f0f2f7;
+  --text-2: #c2c9d6;
+  --muted: #8d97aa;
   --dim: #5d6679;
 
   --accent: #ea580c;
