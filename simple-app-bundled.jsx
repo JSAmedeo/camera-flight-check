@@ -24,6 +24,12 @@ const SI = {
       <circle cx="12" cy="17" r="0.8" fill="currentColor" />
     </svg>,
 
+  skip: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 6l7 6-7 6" />
+      <path d="M14 6l7 6-7 6" />
+    </svg>,
+
   camera: (p = {}) =>
   <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
       <path d="M8 18h9l4-6h22l4 6h9v32H8z" />
@@ -378,13 +384,79 @@ function SimpleSteps({ step }) {
 // ============================================================
 // Footer
 // ============================================================
-function SimpleFoot({ left, back, primary }) {
+function SimpleFoot({ left, back, skip, primary }) {
   return (
     <div className="s-foot">
       <div className="s-foot-status">{left}</div>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         {back}
+        {skip}
         {primary}
+      </div>
+    </div>);
+
+}
+
+// Tertiary control, deliberately understated next to the primary action —
+// available for busy staff, but not the path the screen is designed around.
+function SkipButton({ onClick }) {
+  return (
+    <button className="s-btn s-btn--skip" onClick={onClick}>
+      <SI.skip size={15} /> {S.skip.button}
+    </button>);
+
+}
+
+function SkipReasonModal({ screenLabel, onConfirm, onClose }) {
+  const [reason, setReason] = React.useState(S.skip.reasons[0]);
+  const [note, setNote] = React.useState("");
+  const isOther = reason === S.skip.reasons[S.skip.reasons.length - 1];
+
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="s-info" onClick={onClose}>
+      <div className="s-info-card s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <button className="s-info-close" onClick={onClose} aria-label="Close">
+          <SI.close size={18} />
+        </button>
+        <div className="s-info-head">
+          <div>
+            <div className="s-info-eyebrow">{S.skip.eyebrowPrefix}{screenLabel}</div>
+            <h3 className="s-info-title">{S.skip.modalTitle}</h3>
+          </div>
+        </div>
+        <div className="s-qa-chips" style={{ marginTop: 4 }}>
+          {S.skip.reasons.map((r) =>
+          <button
+            key={r}
+            className={`s-qa-chip ${reason === r ? "s-qa-chip--on" : ""}`}
+            onClick={() => setReason(r)}>
+              {r}
+            </button>
+          )}
+        </div>
+        {isOther &&
+        <input
+          className="s-input"
+          style={{ marginTop: 12 }}
+          placeholder={S.skip.otherPlaceholder}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          autoFocus />
+        }
+        <div className="s-tut-foot">
+          <button className="s-btn s-btn--ghost" onClick={onClose}>{S.skip.cancel}</button>
+          <button
+            className="s-btn s-btn--primary"
+            onClick={() => onConfirm(isOther && note.trim() ? note.trim() : reason)}>
+            {S.skip.confirm}
+          </button>
+        </div>
       </div>
     </div>);
 
@@ -412,7 +484,7 @@ function LiveClock() {
 
 }
 
-function ScreenWelcome({ operator, setOperator, onStart }) {
+function ScreenWelcome({ operator, setOperator, onStart, onSkip }) {
   const canStart = operator.firstName.trim().length > 0 && operator.lastName.trim().length > 0;
   const set = (key) => (e) => setOperator((o) => ({ ...o, [key]: e.target.value }));
   return (
@@ -460,6 +532,7 @@ function ScreenWelcome({ operator, setOperator, onStart }) {
       </div>
       <SimpleFoot
         left={canStart ? null : <span>{S.welcome.enterNameHint}</span>}
+        skip={<SkipButton onClick={onSkip} />}
         primary={
         <button className="s-btn s-btn--primary s-btn--xl" disabled={!canStart} onClick={onStart}>
             {S.common.start} <SI.arrow size={20} />
@@ -482,7 +555,7 @@ const WALK_ITEMS = Object.keys(WALK_ICONS).map((key) => ({
   key, icon: WALK_ICONS[key], ...S.walk.items[key]
 }));
 
-function ScreenWalkAround({ checked, setChecked, onNext, onBack }) {
+function ScreenWalkAround({ checked, setChecked, onNext, onBack, onSkip }) {
   const toggle = (k) => setChecked((c) => ({ ...c, [k]: !c[k] }));
   const doneCount = Object.values(checked).filter(Boolean).length;
   const total = WALK_ITEMS.length;
@@ -543,6 +616,7 @@ function ScreenWalkAround({ checked, setChecked, onNext, onBack }) {
           </span>
         }
         back={<button className="s-btn s-btn--back" onClick={onBack}><SI.back /> {S.common.back}</button>}
+        skip={<SkipButton onClick={onSkip} />}
         primary={
         <button
           className="s-btn s-btn--primary s-btn--xl"
@@ -654,7 +728,7 @@ function WalkInfoModal({ item, onClose }) {
 // Screen 3 — Camera check (real detect → capture → grey-card region → apply)
 // Stages: "auto" -> "shoot" -> "select" -> "applied"
 // ============================================================
-function ScreenCamera({ onNext, onBack }) {
+function ScreenCamera({ onNext, onBack, onSkip }) {
   const [stage, setStage] = React.useState("auto");
   const [detected, setDetected] = React.useState(null); // {model, serial}
   const [camSettings, setCamSettings] = React.useState(null);
@@ -794,6 +868,7 @@ function ScreenCamera({ onNext, onBack }) {
         <SimpleFoot
           left={null}
           back={<button className="s-btn s-btn--back" onClick={onBack}><SI.back /> {S.common.back}</button>}
+          skip={<SkipButton onClick={onSkip} />}
           primary={
           <button
             className="s-btn s-btn--primary s-btn--xl"
@@ -889,6 +964,7 @@ function ScreenCamera({ onNext, onBack }) {
         <SimpleFoot
           left={null}
           back={<button className="s-btn s-btn--back" disabled={busy} onClick={() => setStage("auto")}><SI.back /> {S.common.back}</button>}
+          skip={<SkipButton onClick={onSkip} />}
           primary={
           <button className="s-btn s-btn--primary s-btn--xl" disabled={busy} onClick={takePhoto}>
               {busy ? <><div className="s-spinner" /> {busyLabel}</> : <><SI.shutter size={22} /> {S.common.takePhoto}</>}
@@ -955,6 +1031,7 @@ function ScreenCamera({ onNext, onBack }) {
         <SimpleFoot
           left={null}
           back={<button className="s-btn s-btn--back" disabled={busy} onClick={() => setStage("shoot")}><SI.back /> {S.camera.select.retakePhoto}</button>}
+          skip={<SkipButton onClick={onSkip} />}
           primary={null} />
       </>);
   }
@@ -1082,6 +1159,7 @@ function ScreenCamera({ onNext, onBack }) {
       <SimpleFoot
         left={null}
         back={<button className="s-btn s-btn--back" onClick={() => setStage("shoot")}>{S.camera.applied.redoGreyCard}</button>}
+        skip={<SkipButton onClick={onSkip} />}
         primary={
         <button className="s-btn s-btn--primary s-btn--xl" onClick={onNext}>
             {S.common.continue} <SI.arrow size={20} />
@@ -1337,7 +1415,7 @@ const COLOR_FIX_LABELS = () => ({
   saturated: S.testPhoto.colorOverSaturated
 });
 
-function ScreenTestPhoto({ onNext, onBack }) {
+function ScreenTestPhoto({ onNext, onBack, onSkip }) {
   const [stage, setStage] = React.useState("aim"); // "aim" | "review"
   const [photo, setPhoto] = React.useState(null);
   const [camSettings, setCamSettings] = React.useState(null);
@@ -1492,6 +1570,7 @@ function ScreenTestPhoto({ onNext, onBack }) {
         <SimpleFoot
           left={null}
           back={<button className="s-btn s-btn--back" disabled={busy} onClick={onBack}><SI.back /> {S.common.back}</button>}
+          skip={<SkipButton onClick={onSkip} />}
           primary={
           <button className="s-btn s-btn--primary s-btn--xl" disabled={busy} onClick={() => takePhoto(pendingKeep)}>
               {busy ? <><div className="s-spinner" /> {S.common.takingPhoto}</> : <><SI.shutter size={22} /> {S.common.takePhoto}</>}
@@ -1664,6 +1743,7 @@ function ScreenTestPhoto({ onNext, onBack }) {
           {(centered === true ? 1 : 0) + (crisp === true ? 1 : 0) + (colorsYes ? 1 : 0)} {S.testPhoto.checksOf} 3
         </b><span style={{ marginLeft: 8 }}>{S.testPhoto.checksPassed}</span></span>}
         back={<button className="s-btn s-btn--back" disabled={busy} onClick={() => takePhoto(0)}><SI.retake size={16} /> {S.testPhoto.takeItAgain}</button>}
+        skip={<SkipButton onClick={onSkip} />}
         primary={
         <button className="s-btn s-btn--primary s-btn--xl" disabled={!colorsYes || busy} onClick={onNext}>
             <SI.check size={20} /> {S.testPhoto.looksGood}
@@ -1837,28 +1917,67 @@ function SimpleApp() {
   const [help, setHelp] = React.useState(false);
   const [operator, setOperator] = React.useState({ firstName: "", lastName: "" });
   const [run, setRun] = React.useState(null); // { id, startedAt }
+  const [settings, setSettings] = React.useState({ skipReasonPrompt: true });
+  const [skipPrompt, setSkipPrompt] = React.useState(null); // { screenKey, screenLabel } while the reason modal is open
   const scale = useScale(STAGE_W, STAGE_H);
+
+  React.useEffect(() => {
+    if (window.cfc && window.cfc.settings) {
+      window.cfc.settings.load().then(setSettings).catch(() => {});
+    }
+  }, []);
 
   const next = () => setStep((s) => Math.min(5, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
-  const restart = () => {setStep(1);setWalkChecked({});setRun(null);};
+  const restart = () => {setStep(1);setWalkChecked({});setRun(null);setOperator({ firstName: "", lastName: "" });};
 
-  // Operator signed in — open a check run and persist it (future: POST to the API)
-  const startCheck = () => {
+  // Operator signed in — open a check run and persist it (future: POST to the
+  // API). Returns the new runId so a Welcome-screen skip can log against it.
+  const startCheck = (operatorOverride) => {
+    const finalOperator = operatorOverride || operator;
     const id = "cfc-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
     const startedAt = new Date().toISOString();
+    if (operatorOverride) setOperator(operatorOverride);
     setRun({ id, startedAt });
     if (window.cfc && window.cfc.runs) {
       window.cfc.runs.save({
         type: "check_started",
         runId: id,
-        operator: { firstName: operator.firstName.trim(), lastName: operator.lastName.trim() },
-        station: "Camera 1",
-        set: "Santa Set A",
+        operator: { firstName: finalOperator.firstName.trim(), lastName: finalOperator.lastName.trim() },
+        station: (settings.location && settings.location.station) || "Camera 1",
+        set: (settings.location && settings.location.label) || "Santa Set A",
         startedAt
       }).catch(() => {});
     }
     next();
+    return id;
+  };
+
+  const logSkip = (runId, screenKey, reason) => {
+    if (!(window.cfc && window.cfc.runs) || !runId) return;
+    window.cfc.runs.save({
+      type: "screen_skipped", runId, screen: screenKey, reason: reason || null, at: new Date().toISOString()
+    }).catch(() => {});
+  };
+
+  // Welcome has no run yet — skipping it starts one (with a placeholder name
+  // if none was entered) and logs the skip against that new run.
+  const skipWelcome = (reason) => {
+    const placeholder = !operator.firstName.trim() ? { firstName: "Unknown", lastName: "Operator" } : null;
+    logSkip(startCheck(placeholder), "welcome", reason);
+  };
+
+  const requestSkip = (screenKey, screenLabel) => {
+    if (settings.skipReasonPrompt) { setSkipPrompt({ screenKey, screenLabel }); return; }
+    if (screenKey === "welcome") skipWelcome(null);
+    else { logSkip(run && run.id, screenKey, null); next(); }
+  };
+
+  const confirmSkip = (reason) => {
+    const { screenKey } = skipPrompt;
+    setSkipPrompt(null);
+    if (screenKey === "welcome") skipWelcome(reason);
+    else { logSkip(run && run.id, screenKey, reason); next(); }
   };
 
   // Keyboard nav
@@ -1876,10 +1995,10 @@ function SimpleApp() {
 
   const renderScreen = () => {
     switch (step) {
-      case 1:return <ScreenWelcome operator={operator} setOperator={setOperator} onStart={startCheck} />;
-      case 2:return <ScreenWalkAround checked={walkChecked} setChecked={setWalkChecked} onNext={next} onBack={back} />;
-      case 3:return <ScreenCamera onNext={next} onBack={back} />;
-      case 4:return <ScreenTestPhoto onNext={next} onBack={back} />;
+      case 1:return <ScreenWelcome operator={operator} setOperator={setOperator} onStart={startCheck} onSkip={() => requestSkip("welcome", S.steps[0])} />;
+      case 2:return <ScreenWalkAround checked={walkChecked} setChecked={setWalkChecked} onNext={next} onBack={back} onSkip={() => requestSkip("walkaround", S.steps[1])} />;
+      case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} />;
+      case 4:return <ScreenTestPhoto onNext={next} onBack={back} onSkip={() => requestSkip("testphoto", S.steps[3])} />;
       case 5:return <ScreenDone onRestart={restart} operator={operator} run={run} />;
       default:return null;
     }
@@ -1901,64 +2020,18 @@ function SimpleApp() {
             <SimpleTop openHelp={() => setHelp(true)} />
             {renderScreen()}
             {help && <HelpModal onClose={() => setHelp(false)} />}
+            {skipPrompt &&
+            <SkipReasonModal
+              screenLabel={skipPrompt.screenLabel}
+              onClose={() => setSkipPrompt(null)}
+              onConfirm={confirmSkip} />
+            }
             <LaunchFlash />
           </div>
         </div>
       </div>
-
-      <PrototypeHUD step={step} total={5} next={next} prev={back} restart={restart} />
     </>);
 
-}
-
-// ============================================================
-// HUD
-// ============================================================
-function PrototypeHUD({ step, total, next, prev, restart }) {
-  return (
-    <div data-proto-hud style={{
-      // Dev-only navigation. Lives top-right in the step-dots band — the one
-      // spot that is empty on every screen — so it never covers the footer buttons.
-      position: "fixed", top: "9%", right: 14,
-      display: "flex", alignItems: "center", gap: 12,
-      width: "max-content",
-      whiteSpace: "nowrap",
-      padding: "9px 12px",
-      background: "rgba(10, 13, 18, 0.85)",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: 11,
-      backdropFilter: "blur(16px)",
-      boxShadow: "0 8px 28px rgba(0,0,0,0.5)",
-      fontFamily: "Geist, system-ui, sans-serif",
-      color: "#e6ecf3",
-      fontSize: 15,
-      zIndex: 9999
-    }}>
-      <span style={{
-        fontFamily: "ui-monospace, Menlo, monospace",
-        fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase",
-        color: "#5a657a"
-      }}>Dev</span>
-      <button onClick={prev} disabled={step === 1} style={hudBtn(step === 1)}>←</button>
-      <span style={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 14 }}>
-        <b>{String(step).padStart(2, "0")}</b><span style={{ color: "#5a657a" }}>/{String(total).padStart(2, "0")}</span>
-      </span>
-      <button onClick={next} disabled={step === total} style={hudBtn(step === total, true)}>→</button>
-      <span style={{ width: 1, height: 20, background: "rgba(255,255,255,0.1)" }} />
-      <button onClick={restart} style={hudBtn(false)}>Restart</button>
-    </div>);
-
-}
-function hudBtn(disabled, primary) {
-  return {
-    height: 33, padding: "0 13px", borderRadius: 8,
-    background: primary && !disabled ? "#ea580c" : "rgba(255,255,255,0.04)",
-    border: `1px solid ${primary && !disabled ? "#ea580c" : "rgba(255,255,255,0.1)"}`,
-    color: primary && !disabled ? "white" : disabled ? "#3d4759" : "#e6ecf3",
-    cursor: disabled ? "default" : "pointer",
-    fontFamily: "inherit", fontSize: 15, fontWeight: 500,
-    opacity: disabled ? 0.5 : 1
-  };
 }
 
 ReactDOM.createRoot(document.getElementById("simple-root")).render(<SimpleApp />);

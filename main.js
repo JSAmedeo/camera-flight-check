@@ -1,11 +1,78 @@
 // Camera Flight Check — Electron main process.
 // Opens the check UI as a frameless-feeling kiosk-style desktop window.
 
-const { app, BrowserWindow, globalShortcut, screen, ipcMain } = require("electron");
+const { app, BrowserWindow, globalShortcut, screen, ipcMain, dialog } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { createCamera } = require("./camera-bridge");
+
+// ---------------------------------------------------------------- settings
+// Admin-configurable app settings, persisted to settings.json in userData.
+// Loaded once at startup; `settings` is updated in place on every save so
+// other handlers (e.g. runs:save below) always see the current value.
+let settings = null;
+
+function defaultSettings() {
+  return {
+    location: { label: "", station: "Camera 1" },
+    dataDir: path.join(app.getPath("documents"), "Camera Flight Check Logs"),
+    skipReasonPrompt: true,
+    cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
+    overlay: { offsetXPct: 0, offsetYPct: 0, scalePct: 100, customImagePath: null },
+  };
+}
+
+// Nested settings objects merge key-by-key so a settings.json saved before a
+// new sub-key existed still picks up that key's default instead of losing it.
+function mergeSettings(saved) {
+  const defaults = defaultSettings();
+  const merged = { ...defaults, ...saved };
+  for (const key of ["location", "cameraLimits", "overlay"]) {
+    merged[key] = { ...defaults[key], ...(saved[key] || {}) };
+  }
+  return merged;
+}
+
+function settingsFile() {
+  return path.join(app.getPath("userData"), "settings.json");
+}
+
+function loadSettings() {
+  let saved = {};
+  try { saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8")); } catch {}
+  return mergeSettings(saved);
+}
+
+function saveSettings(partial) {
+  settings = mergeSettings({ ...settings, ...partial });
+  fs.writeFileSync(settingsFile(), JSON.stringify(settings, null, 2));
+  return settings;
+}
+
+function setupSettings() {
+  settings = loadSettings();
+
+  ipcMain.handle("settings:load", () => settings);
+  ipcMain.handle("settings:save", (_e, partial) => saveSettings(partial || {}));
+  ipcMain.handle("settings:hostname", () => os.hostname());
+  ipcMain.handle("settings:pickFolder", async () => {
+    const r = await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
+    return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
+  });
+  ipcMain.handle("settings:pickImage", async () => {
+    const r = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "svg"] }],
+    });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const destDir = path.join(app.getPath("userData"), "overlays");
+    fs.mkdirSync(destDir, { recursive: true });
+    const dest = path.join(destDir, "custom-guide" + path.extname(r.filePaths[0]).toLowerCase());
+    fs.copyFileSync(r.filePaths[0], dest);
+    return dest;
+  });
+}
 
 // Squirrel installer events (create/remove shortcuts, updates) — exit early when
 // the exe is invoked by the installer rather than a user.
@@ -51,6 +118,18 @@ function setupCamera() {
   ipcMain.handle("runs:save", (_e, event) => {
     const record = { ...event, savedAt: new Date().toISOString() };
     fs.appendFileSync(runsFile, JSON.stringify(record) + "\n");
+    // Also fan out to a per-run session file in the admin-configured data
+    // folder — the one a field manager can actually browse to, and the one
+    // that will grow to include the test photo in a later phase.
+    if (event.runId) {
+      try {
+        const sessDir = path.join(settings.dataDir, "sessions");
+        fs.mkdirSync(sessDir, { recursive: true });
+        fs.appendFileSync(path.join(sessDir, `${event.runId}.jsonl`), JSON.stringify(record) + "\n");
+      } catch (e) {
+        console.log("[main] session log write failed:", e.message);
+      }
+    }
     return { file: runsFile };
   });
 
@@ -139,6 +218,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  setupSettings();
   setupCamera();
   createWindow();
 });

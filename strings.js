@@ -32,6 +32,17 @@ window.CFC_STRINGS = {
     moreInfo: "More info",
   },
 
+  // ---- skip control + reason prompt (any gated screen) ----
+  skip: {
+    button: "Skip",
+    eyebrowPrefix: "Skipping · ",
+    modalTitle: "Why are you skipping this?",
+    reasons: ["Running late", "Equipment issue", "Other"],
+    otherPlaceholder: "Say a bit more (optional)",
+    cancel: "Cancel",
+    confirm: "Skip this screen",
+  },
+
   // ---- top bar ----
   app: {
     title: "Camera Check",

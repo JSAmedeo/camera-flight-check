@@ -7,6 +7,13 @@ contextBridge.exposeInMainWorld("cfc", {
   runs: {
     save: (event) => ipcRenderer.invoke("runs:save", event),
   },
+  settings: {
+    load: () => ipcRenderer.invoke("settings:load"),
+    save: (partial) => ipcRenderer.invoke("settings:save", partial),
+    hostname: () => ipcRenderer.invoke("settings:hostname"),
+    pickFolder: () => ipcRenderer.invoke("settings:pickFolder"),
+    pickImage: () => ipcRenderer.invoke("settings:pickImage"),
+  },
   camera: {
     mode: () => ipcRenderer.invoke("camera:mode"),
     detect: () => ipcRenderer.invoke("camera:detect"),
