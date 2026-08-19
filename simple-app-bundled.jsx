@@ -555,7 +555,7 @@ function ScreenWelcome({ operator, setOperator, onStart, onSkip }) {
         left={canStart ? null : <span>{S.welcome.enterNameHint}</span>}
         skip={<SkipButton onClick={onSkip} />}
         primary={
-        <button className="s-btn s-btn--primary s-btn--xl" disabled={!canStart} onClick={onStart}>
+        <button className="s-btn s-btn--primary s-btn--xl" disabled={!canStart} onClick={() => onStart()}>
             {S.common.start} <SI.arrow size={20} />
           </button>
         } />
