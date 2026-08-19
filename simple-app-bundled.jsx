@@ -223,14 +223,18 @@ function nearestValue(list, target) {
 
 // Decide what to change on the camera. Strobe-lit set: exposure moves via
 // ISO first, then aperture; shutter stays (it barely affects strobe exposure).
-function planCorrections(settings, analysis) {
+// `limits` (from admin Settings' cameraLimits) only ever narrows the camera's
+// own reported value tables — it never widens past what the camera supports.
+function planCorrections(settings, analysis, limits) {
+  limits = limits || {};
   const plan = {};
   const currentK = WB_KELVIN[settings.wb] || 5500;
   // empirical: pull the WB assumption toward neutral based on measured warmth
   const estimatedK = currentK / Math.pow(analysis.warmth, 0.6);
   if (Math.abs(Math.log2(analysis.warmth)) > CAST_TOLERANCE && analysis.clipped < CLIP_LIMIT) {
     let bestWb = null, bestDiff = Infinity;
-    for (const wb of settings.wbValues || []) {
+    const wbCandidates = (settings.wbValues || []).filter((wb) => !limits.allowedWb || limits.allowedWb.includes(wb));
+    for (const wb of wbCandidates) {
       const k = WB_KELVIN[wb];
       if (!k) continue;
       const d = Math.abs(k - estimatedK);
@@ -242,10 +246,13 @@ function planCorrections(settings, analysis) {
     const curIso = parseFloat(settings.iso);
     if (curIso > 0) {
       // The driver's ISO table includes extended values real bodies don't accept
-      // (T7 lists 6/12/25/50) — writing one can wedge the camera. Stay in 100+.
+      // (T7 lists 6/12/25/50) — writing one can wedge the camera. Stay in 100+,
+      // further narrowed by the admin's ISO limits if set.
+      const isoFloor = Math.max(100, limits.isoMin ?? 100);
+      const isoCeil = Math.min(25600, limits.isoMax ?? 25600);
       const isoCandidates = (settings.isoValues || []).filter((v) => {
         const n = parseFloat(v);
-        return n >= 100 && n <= 25600;
+        return n >= isoFloor && n <= isoCeil;
       });
       const newIso = nearestValue(isoCandidates, curIso * Math.pow(2, analysis.evDelta));
       if (newIso && newIso !== settings.iso) plan.iso = newIso;
@@ -255,10 +262,15 @@ function planCorrections(settings, analysis) {
       if (Math.abs(remaining) >= 0.4 && curN > 0) {
         // Only ever stop DOWN (higher f-number). Opening up may exceed what the
         // lens can do at its current zoom (the table is not lens-aware) — leave
-        // brightening to ISO.
+        // brightening to ISO. Admin aperture-max further narrows the stop-down ceiling.
         const target = curN * Math.pow(2, -remaining / 2);
         if (target > curN) {
-          const stopDownValues = (settings.apertureValues || []).filter((v) => parseFloat(v) >= curN);
+          const apertureCeil = limits.apertureMax ?? Infinity;
+          const apertureFloor = Math.max(curN, limits.apertureMin ?? -Infinity);
+          const stopDownValues = (settings.apertureValues || []).filter((v) => {
+            const n = parseFloat(v);
+            return n >= apertureFloor && n <= apertureCeil;
+          });
           const newN = nearestValue(stopDownValues, target);
           if (newN && newN !== settings.aperture) plan.aperture = newN;
         }
@@ -793,7 +805,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
     setBusy(true); setBusyLabel(S.camera.select.balancing); setCamError(null);
     try {
       const analysis = analyzeGreyCard(imgEl, box);
-      const plan = planCorrections(camSettings, analysis);
+      const plan = planCorrections(camSettings, analysis, settings.cameraLimits);
       const before = {
         iso: camSettings.iso, wb: camSettings.wb,
         aperture: camSettings.aperture, shutter: camSettings.shutter
@@ -1494,11 +1506,14 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
       }, 0)));
       const plan = {};
       const labels = [];
+      const limits = settings.cameraLimits || {};
       const curIso = parseFloat(camSettings && camSettings.iso);
       if (ev !== 0 && curIso > 0) {
+        const isoFloor = Math.max(100, limits.isoMin ?? 100);
+        const isoCeil = Math.min(25600, limits.isoMax ?? 25600);
         const isoCandidates = (camSettings.isoValues || []).filter((v) => {
           const n = parseFloat(v);
-          return n >= 100 && n <= 25600;
+          return n >= isoFloor && n <= isoCeil;
         });
         const newIso = nearestValue(isoCandidates, curIso * Math.pow(2, ev));
         if (newIso && newIso !== camSettings.iso) {
@@ -1510,7 +1525,12 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
         const remaining = ev - Math.log2(isoAfter / curIso);
         const curN = parseFloat(camSettings.aperture);
         if (remaining <= -0.4 && curN > 0) {
-          const stopDownValues = (camSettings.apertureValues || []).filter((v) => parseFloat(v) >= curN);
+          const apertureCeil = limits.apertureMax ?? Infinity;
+          const apertureFloor = Math.max(curN, limits.apertureMin ?? -Infinity);
+          const stopDownValues = (camSettings.apertureValues || []).filter((v) => {
+            const n = parseFloat(v);
+            return n >= apertureFloor && n <= apertureCeil;
+          });
           const newN = nearestValue(stopDownValues, curN * Math.pow(2, -remaining / 2));
           if (newN && newN !== camSettings.aperture) {
             plan.aperture = newN;
