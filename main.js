@@ -5,6 +5,7 @@ const { app, BrowserWindow, globalShortcut, screen, ipcMain, dialog } = require(
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
+const { spawn } = require("child_process");
 const { createCamera } = require("./camera-bridge");
 
 // ---------------------------------------------------------------- settings
@@ -13,20 +14,59 @@ const { createCamera } = require("./camera-bridge");
 // other handlers (e.g. runs:save below) always see the current value.
 let settings = null;
 
+// Camera computers are named MALL####-Camera. The #### is looked up against
+// assets/malls.csv (number,name) to show a friendly location name. No match
+// on either the hostname pattern or the CSV -> caller falls back to raw text.
+function loadMallMap() {
+  const map = {};
+  try {
+    const text = fs.readFileSync(path.join(__dirname, "assets", "malls.csv"), "utf8");
+    text.split(/\r?\n/).forEach((line, i) => {
+      if (i === 0 || !line.trim()) return; // skip header + blank lines
+      const idx = line.indexOf(",");
+      if (idx < 0) return;
+      const number = line.slice(0, idx).trim();
+      const name = line.slice(idx + 1).trim();
+      if (number && name) map[number] = name;
+    });
+  } catch {}
+  return map;
+}
+
+function parseLocationFromHostname(hostname, mallMap) {
+  const m = /^MALL(\d+)-Camera$/i.exec(hostname || "");
+  if (!m) return { number: null, name: null };
+  const number = m[1];
+  return { number, name: mallMap[number] || null };
+}
+
 function defaultSettings() {
   return {
-    location: { label: "", station: "Camera 1" },
-    dataDir: path.join(app.getPath("documents"), "Camera Flight Check Logs"),
+    location: { number: "", name: "", station: "Camera" },
+    dataDir: path.join("C:\\preflight-ops-check", "Logs"),
     skipReasonPrompt: true,
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
-    overlay: { offsetXPct: 0, offsetYPct: 0, scalePct: 100, customImagePath: null },
+    // Field-tuned so the bundled guide matches a well-framed reference photo
+    // (head ~2/5 down the frame, feet in the lower portion just above the
+    // bottom) rather than the guide's native full-bleed proportions (scale
+    // 100 / offset 0). This is the sliders' "zero" resting position — see
+    // DEFAULT_OVERLAY in simple-app-bundled.jsx, which the Reset button and
+    // initial placeholder state must stay in sync with.
+    overlay: { offsetXPct: 0, offsetYPct: 9, scalePct: 87, customImagePath: null },
+    rpsPath: "C:\\CentricsRPSClient\\bin\\CentricsRPSClient.exe",
+    // Seeded with the same contacts the app shipped with before this was
+    // admin-editable, so Need Help never renders empty out of the box.
+    helpContacts: [
+      { title: "District Manager", description: "", phone: "(xxx) xxx-xxxx", email: "" },
+      { title: "Technical Support", description: "", phone: "(855) 925-4546", email: "" },
+    ],
   };
 }
 
 // Nested settings objects merge key-by-key so a settings.json saved before a
 // new sub-key existed still picks up that key's default instead of losing it.
-function mergeSettings(saved) {
-  const defaults = defaultSettings();
+function mergeSettings(saved, defaults) {
+  defaults = defaults || defaultSettings();
   const merged = { ...defaults, ...saved };
   for (const key of ["location", "cameraLimits", "overlay"]) {
     merged[key] = { ...defaults[key], ...(saved[key] || {}) };
@@ -41,7 +81,17 @@ function settingsFile() {
 function loadSettings() {
   let saved = {};
   try { saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8")); } catch {}
-  return mergeSettings(saved);
+  const defaults = defaultSettings();
+  // Auto-fill location from the hostname + mall CSV only when nothing has
+  // been saved yet -- once an admin has saved a location (even one that
+  // happens to match what auto-detect would produce), it's never silently
+  // overwritten again on a later launch.
+  const hasSavedLocation = saved.location && (saved.location.number || saved.location.name);
+  if (!hasSavedLocation) {
+    const detected = parseLocationFromHostname(os.hostname(), loadMallMap());
+    defaults.location = { ...defaults.location, number: detected.number || "", name: detected.name || "" };
+  }
+  return mergeSettings(saved, defaults);
 }
 
 function saveSettings(partial) {
@@ -53,8 +103,17 @@ function saveSettings(partial) {
 function setupSettings() {
   settings = loadSettings();
 
-  ipcMain.handle("settings:load", () => settings);
-  ipcMain.handle("settings:save", (_e, partial) => saveSettings(partial || {}));
+  // hostname is attached fresh each load (not persisted) so the Welcome
+  // screen can fall back to something readable if hostname parsing or the
+  // mall CSV lookup ever comes up empty.
+  ipcMain.handle("settings:load", () => ({ ...settings, hostname: os.hostname() }));
+  ipcMain.handle("settings:save", (_e, partial) => {
+    // `hostname` is attached by settings:load for display only -- the
+    // renderer's draft state carries it along, but it must never be
+    // persisted (it's re-attached fresh from os.hostname() on every load).
+    const { hostname, ...toSave } = partial || {};
+    return saveSettings(toSave);
+  });
   ipcMain.handle("settings:hostname", () => os.hostname());
   // Pass the owning BrowserWindow so the native dialog is properly modal to
   // it — without a parent, an unowned dialog can end up behind or detached
@@ -76,6 +135,23 @@ function setupSettings() {
     const dest = path.join(destDir, "custom-guide" + path.extname(r.filePaths[0]).toLowerCase());
     fs.copyFileSync(r.filePaths[0], dest);
     return dest;
+  });
+
+  // Launches RPS (the photo sales app) at the admin-configured path. Checked
+  // with fs.existsSync first rather than relying on spawn's error event --
+  // more reliable to detect "not found" upfront than racing a child process.
+  ipcMain.handle("app:launchRps", () => {
+    const rpsPath = settings.rpsPath;
+    if (!rpsPath || !fs.existsSync(rpsPath)) {
+      return { ok: false, error: "not-found" };
+    }
+    try {
+      const child = spawn(rpsPath, [], { cwd: path.dirname(rpsPath), detached: true, stdio: "ignore" });
+      child.unref();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
   });
 }
 
@@ -177,6 +253,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       spellcheck: false,
+      backgroundThrottling: false,
     },
   });
 
@@ -205,6 +282,12 @@ function createWindow() {
       const delayArg = process.argv.find((a) => a.startsWith("--shot-delay="));
       const delay = delayArg ? parseInt(delayArg.split("=")[1], 10) : 4000;
       setTimeout(async () => {
+        // Force the compositor to paint the latest DOM/scroll state before
+        // capturing — capturePage() can otherwise return a stale frame for
+        // changes (like a programmatic scroll) made shortly beforehand.
+        await win.webContents.executeJavaScript(
+          "new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))"
+        );
         const image = await win.webContents.capturePage();
         fs.writeFileSync(screenshotArg.split("=")[1], image.toPNG());
         app.quit();

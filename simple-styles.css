@@ -6,6 +6,8 @@
      warmed the blue-heavy neutrals slightly, and eased the bg→text contrast
      a touch. Still dark-first (kiosk/photo-booth feel), just less harsh. */
   --bg: #171b24;
+  --bg-chrome: #242a38;
+  --bg-body: #454b60;
   --bg-soft: #1d222d;
   --card: #272e40;
   --card-2: #2f3749;
@@ -21,6 +23,9 @@
   --accent: #ea580c;
   --accent-2: #f97316;
   --accent-soft: rgba(234, 88, 12, 0.16);
+
+  --btn-primary: #15803d;
+  --btn-primary-hover: #16a34a;
 
   --pass: #22c55e;
   --pass-soft: rgba(34, 197, 94, 0.16);
@@ -56,7 +61,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  background: var(--bg);
+  background: var(--bg-chrome);
   border-bottom: 1px solid var(--line-soft);
 }
 
@@ -67,7 +72,7 @@
 }
 .s-top-mark {
   width: 40px; height: 40px;
-  border-radius: 10px;
+  border-radius: 7px;
   background: linear-gradient(135deg, #ea580c, #f97316);
   display: grid; place-items: center;
   color: white;
@@ -98,7 +103,7 @@
   padding: 0 16px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 7px;
   color: var(--text);
   font-family: inherit;
   font-size: 15px;
@@ -111,23 +116,22 @@
 
 /* ==================== Step dots ==================== */
 .s-steps {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  padding: 22px 0 6px;
+  gap: 10px;
 }
 .s-dot {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .s-dot-mark {
-  width: 36px; height: 36px;
+  width: 28px; height: 28px;
   border-radius: 50%;
   display: grid; place-items: center;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   background: var(--card);
   border: 1.5px solid var(--line);
@@ -137,7 +141,7 @@
   background: var(--accent);
   border-color: var(--accent);
   color: white;
-  box-shadow: 0 0 0 5px var(--accent-soft);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 .s-dot-mark--done {
   background: var(--pass);
@@ -145,14 +149,14 @@
   color: white;
 }
 .s-dot-label {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--muted);
   font-weight: 500;
 }
 .s-dot--active .s-dot-label { color: var(--text); }
 .s-dot--done .s-dot-label { color: var(--text-2); }
 .s-dot-sep {
-  width: 38px;
+  width: 26px;
   height: 2px;
   border-radius: 1px;
   background: var(--line);
@@ -167,7 +171,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 28px 32px 0;
+  justify-content: center;
+  padding: 28px 32px;
+  background: var(--bg-body);
 }
 
 .s-screen {
@@ -212,7 +218,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 40px;
-  background: var(--bg);
+  background: var(--bg-chrome);
   border-top: 1px solid var(--line-soft);
 }
 
@@ -228,7 +234,7 @@
 .s-btn {
   height: 64px;
   padding: 0 32px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--text);
@@ -247,13 +253,13 @@
 .s-btn:hover { background: var(--card-2); }
 .s-btn:active { transform: translateY(1px); }
 .s-btn--primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--btn-primary);
+  border-color: var(--btn-primary);
   color: white;
-  box-shadow: 0 8px 24px -8px rgba(234, 88, 12, 0.65),
+  box-shadow: 0 8px 24px -8px rgba(21, 128, 61, 0.55),
               inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
-.s-btn--primary:hover { background: var(--accent-2); }
+.s-btn--primary:hover { background: var(--btn-primary-hover); border-color: var(--btn-primary-hover); }
 .s-btn--ghost {
   background: transparent;
   border-color: var(--line);
@@ -263,7 +269,7 @@
   height: 76px;
   padding: 0 44px;
   font-size: 22px;
-  border-radius: 14px;
+  border-radius: 9px;
 }
 .s-btn--back {
   height: 52px;
@@ -283,7 +289,7 @@
 /* ==================== Hero icon ==================== */
 .s-hero-ic {
   width: 132px; height: 132px;
-  border-radius: 28px;
+  border-radius: 18px;
   display: grid; place-items: center;
   position: relative;
   margin-bottom: 4px;
@@ -315,7 +321,7 @@
 .s-card {
   background: var(--card);
   border: 2px solid var(--line);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 22px 20px 54px;
   display: flex;
   flex-direction: column;
@@ -334,7 +340,7 @@
 }
 .s-card-ic {
   width: 56px; height: 56px;
-  border-radius: 14px;
+  border-radius: 9px;
   background: var(--card-soft);
   display: grid; place-items: center;
   color: var(--text-2);
@@ -350,6 +356,7 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.01em;
+  color: #fff;
 }
 .s-card-sub {
   font-size: 14px;
@@ -381,7 +388,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--card-soft);
   border: 1px solid var(--line);
   color: var(--text-2);
@@ -428,7 +435,7 @@
   position: relative;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 13px;
   padding: 30px 32px 26px;
   width: min(560px, 100%);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
@@ -439,7 +446,7 @@
   right: 14px;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 7px;
   border: 1px solid var(--line);
   background: var(--card-soft);
   color: var(--text-2);
@@ -460,7 +467,7 @@
   width: 60px;
   height: 60px;
   flex: 0 0 auto;
-  border-radius: 14px;
+  border-radius: 9px;
   background: var(--accent-soft);
   border: 1px solid rgba(234, 88, 12, 0.4);
   color: var(--accent-2);
@@ -505,7 +512,7 @@
   padding: 14px 16px;
   background: var(--card-soft);
   border: 1px solid var(--line-soft);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 .s-info-num {
   width: 30px;
@@ -541,12 +548,12 @@
   padding: 18px 22px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 9px;
 }
 .s-row + .s-row { margin-top: 10px; }
 .s-row-ic {
   width: 44px; height: 44px;
-  border-radius: 11px;
+  border-radius: 8px;
   background: var(--pass-soft);
   color: var(--pass);
   display: grid; place-items: center;
@@ -582,7 +589,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
-  border-radius: 16px;
+  border-radius: 10px;
   overflow: hidden;
   background: #050709;
   border: 2px solid var(--line);
@@ -628,7 +635,7 @@
   position: absolute;
   left: 22%; right: 22%; top: 22%; bottom: 12%;
   border: 2px dashed rgba(94, 234, 212, 0.7);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .s-aim-label {
   position: absolute;
@@ -638,7 +645,7 @@
   background: var(--bg);
   color: #5eead4;
   border: 1px solid rgba(94, 234, 212, 0.5);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 3px 12px;
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -681,7 +688,7 @@
   padding: 12px 14px;
   background: var(--card-soft);
   border: 1px solid var(--line-soft);
-  border-radius: 10px;
+  border-radius: 7px;
 }
 .s-checklist li > div {
   display: flex;
@@ -717,12 +724,45 @@
   border-color: var(--pass);
 }
 
+/* Grouped variant — for read-only instructional lists (camera/test-photo
+   screens) that must not read as tappable checkboxes like the real Set
+   Checklist items. One bordered box, plain dividers, solid non-clickable dot. */
+.s-checklist--grouped {
+  gap: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-soft);
+}
+.s-checklist--grouped li {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 14px 16px;
+}
+.s-checklist--grouped li:last-child { border-bottom: none; }
+.s-checklist--grouped .s-checklist-dot {
+  width: 6px;
+  height: 6px;
+  border: none;
+  background: var(--dim);
+  margin-top: 8px;
+}
+
+.s-stage-photo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
 .s-stage-tips {
   display: flex;
   flex-direction: column;
   margin-top: 4px;
   border: 1px solid var(--line-soft);
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 .s-stage-tips .s-tip { padding: 12px 16px; }
@@ -735,7 +775,7 @@
   padding: 14px 16px;
   background: var(--accent-soft);
   border: 1px solid rgba(234, 88, 12, 0.45);
-  border-radius: 12px;
+  border-radius: 8px;
   color: var(--text);
   font-size: 15px;
   font-weight: 500;
@@ -775,7 +815,7 @@
   position: relative;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 12px;
   padding: 28px 30px;
   width: min(520px, 100%);
 }
@@ -792,22 +832,21 @@
   line-height: 1.55;
 }
 .s-help-contacts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin: 0 0 22px;
+  max-height: 320px;
+  overflow-y: auto;
 }
 .s-help-contact {
   background: var(--card-soft);
   border: 1px solid var(--line-soft);
-  border-radius: 12px;
-  padding: 16px 18px;
+  border-radius: 6px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-.s-help-contact--wide {
-  grid-column: 1 / -1;
 }
 .s-help-eyebrow {
   font-size: 11.5px;
@@ -832,8 +871,8 @@
   font-weight: 500;
   color: var(--text-2);
   text-decoration: none;
+  cursor: default;
 }
-.s-help-phone:hover { color: var(--accent-2); }
 .s-help-actions {
   display: flex;
   justify-content: flex-end;
@@ -851,7 +890,7 @@
 .s-greeting-card {
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 22px 26px;
   display: flex;
   align-items: center;
@@ -920,7 +959,7 @@
   max-height: 440px;
   background: #050709;
   border: 2px solid var(--line);
-  border-radius: 14px;
+  border-radius: 9px;
   overflow: hidden;
 }
 

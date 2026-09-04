@@ -4,11 +4,11 @@
 
 **Camera Flight Check** is a pre-shift readiness gate for camera stations at high-volume souvenir photo sets (Santa/Bunny venues). Before RPS (the photo capture/sales app) opens, a seasonal operator runs a ~4-minute guided check:
 
-1. **Welcome** — operator enters first/last name (gates Start), live date/time shown; a `check_started` record is written locally for future API posting
-2. **Walk-around** — 6 tap-off physical checks (camera on pole, lens cap, USB, strobe, backdrop, floor), each with a "More info" detail modal
+1. **Welcome** — a getting-started splash (no sign-in): shows the station's mall location (parsed from the computer's hostname, `MALL####-Camera`, looked up against `assets/malls.csv`) and a "what you'll need" list (grey card, character in the chair, camera connected/powered, flash on); live date/time shown; a `check_started` record (with location + station, no operator name) is written locally for future API posting
+2. **Set Checklist** — 6 real tap-off physical checks (set is clean, router online incl. POS/camera/reprint computers connected, Stura webcam ready, camera connected, camera framed correctly, flash connected/tested), each with bullet points inline on the card and a "More info" detail modal built from those same bullets
 3. **Camera** — detects the tethered camera, shows a full **camera stats panel** (model, mode, f-stop, shutter, ISO, WB, image quality), operator photographs the character holding an 18% grey card, drags a box over the card, and the app **corrects white balance + exposure in-camera**, then reports results as matched **"What we found" / "What we fixed"** cards — including explicit "not fixed, here's why" rows when a correction hits a hardware limit
 4. **Test photo** — real capture reviewed through a **guided 3-card QA sequence**: centered? (dotted placement overlay until answered) → crisp? (No → autofocus help) → colors right? (multi-select; problem answers auto-adjust the camera and loop back to retake). Completed cards can be reopened via "Change". "Looks good" is gated on all three passing
-5. **Done** — greets the operator by name, shows real measured duration, writes `check_completed`, releases the camera USB session, and closes so RPS can attach
+5. **Done** — shows real measured duration, writes `check_completed`, releases the camera USB session, and closes so RPS can attach
 
 Target hardware: Canon EOS Rebel T5–T7 (T6 and T7 validated on real hardware 2026-07-17; T5 expected to work, same support generation), plus the Nikon D fleet below. Cameras are on constant power (no battery gating — removed by user request).
 

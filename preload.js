@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("cfc", {
   minimize: () => ipcRenderer.send("win:minimize"),
   close: () => ipcRenderer.send("win:close"),
+  launchRps: () => ipcRenderer.invoke("app:launchRps"),
   runs: {
     save: (event) => ipcRenderer.invoke("runs:save", event),
   },

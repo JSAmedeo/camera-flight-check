@@ -30,10 +30,16 @@ const SI = {
       <path d="M14 6l7 6-7 6" />
     </svg>,
 
+  pin: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 21s7-7.58 7-12A7 7 0 0 0 5 9c0 4.42 7 12 7 12z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>,
+
   gear: (p = {}) =>
-  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="3" />
-      <path d="M12 3.5v2.4M12 18.1v2.4M5.4 6.6l1.7 1.7M16.9 15.7l1.7 1.7M3.5 12h2.4M18.1 12h2.4M5.4 17.4l1.7-1.7M16.9 8.3l1.7-1.7" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
     </svg>,
 
   camera: (p = {}) =>
@@ -87,6 +93,28 @@ const SI = {
       <path d="M14 38l8 8" />
     </svg>,
 
+  router: (p = {}) =>
+  <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
+      <rect x="10" y="34" width="44" height="16" rx="4" />
+      <circle cx="20" cy="42" r="1.6" fill="currentColor" stroke="none" />
+      <circle cx="28" cy="42" r="1.6" fill="currentColor" stroke="none" />
+      <path d="M32 34V22M32 22c-6 0-10-4-10-4M32 22c6 0 10-4 10-4" />
+      <path d="M24 14c4-4 12-4 16 0" />
+    </svg>,
+
+  webcam: (p = {}) =>
+  <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
+      <circle cx="32" cy="26" r="14" />
+      <circle cx="32" cy="26" r="5" />
+      <path d="M20 44h24M26 44l-3 8M38 44l3 8" />
+    </svg>,
+
+  framing: (p = {}) =>
+  <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
+      <path d="M10 20V12a2 2 0 012-2h8M54 20V12a2 2 0 00-2-2h-8M10 44v8a2 2 0 002 2h8M54 44v8a2 2 0 01-2 2h-8" />
+      <circle cx="32" cy="32" r="9" />
+    </svg>,
+
   backdrop: (p = {}) =>
   <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
       <path d="M10 10h44v34H10z" />
@@ -134,6 +162,12 @@ const SI = {
   phone: (p = {}) =>
   <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" />
+    </svg>,
+
+  mail: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
     </svg>
 
 };
@@ -325,7 +359,7 @@ function SettingsStrip({ s }) {
 // ============================================================
 // Top bar
 // ============================================================
-function SimpleTop({ openHelp, openSettings }) {
+function SimpleTop({ openHelp, openSettings, step }) {
   const [simulated, setSimulated] = React.useState(false);
   React.useEffect(() => {
     if (cam) cam.mode().then((m) => setSimulated(m === "simulator")).catch(() => {});
@@ -341,19 +375,16 @@ function SimpleTop({ openHelp, openSettings }) {
         </div>
         <div>
           <div className="s-top-title">{S.app.title}</div>
-          <div className="s-top-sub">{S.app.subtitle}</div>
         </div>
       </div>
-      <div className="s-top-station">
-        <span>{S.app.station}<b>{S.app.stationBold}</b></span>
-        {simulated && <span className="s-sim-badge">{S.app.simulatorBadge}</span>}
-      </div>
+      <SimpleSteps step={step} />
       <div className="s-top-actions">
-        <button className="s-win-btn" onClick={openSettings} aria-label={S.app.settings} title={S.app.settings}>
-          <SI.gear size={17} />
-        </button>
+        {simulated && <span className="s-sim-badge">{S.app.simulatorBadge}</span>}
         <button className="s-help-btn" onClick={openHelp}>
           <SI.help size={16} /> {S.app.getHelp}
+        </button>
+        <button className="s-win-btn" onClick={openSettings} aria-label={S.app.settings} title={S.app.settings}>
+          <SI.gear size={17} />
         </button>
         {window.cfc && <>
           <span className="s-win-sep" />
@@ -484,82 +515,78 @@ function SkipReasonModal({ screenLabel, onConfirm, onClose }) {
 }
 
 // ============================================================
-// Screen 1 — Welcome (operator sign-in)
+// Screen 1 — Welcome (getting-started splash: location + what you'll need)
 // ============================================================
-function LiveClock() {
+function ScreenWelcome({ onStart, settings }) {
   const [now, setNow] = React.useState(() => new Date());
+  const [greyCardHelp, setGreyCardHelp] = React.useState(false);
   React.useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
-  const date = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-  const time = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
-  return (
-    <div className="s-datetime">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3.5 2" />
-      </svg>
-      <span>{date} · <b>{time}</b></span>
-    </div>);
+  const dateText = now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const timeText = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
-}
+  const loc = settings.location || {};
+  const locationText =
+  loc.name ||
+  (loc.number ? fmt(S.app.locationNumberOnly, { number: loc.number }) : null) ||
+  settings.hostname ||
+  S.app.locationUnknown;
+  const needs = [
+  { title: S.welcome.need1Title, text: S.welcome.need1Text },
+  { title: S.welcome.need2Title, text: S.welcome.need2Text },
+  { title: S.welcome.need3Title, text: S.welcome.need3Text },
+  { title: S.welcome.need4Title, text: S.welcome.need4Text }];
 
-function ScreenWelcome({ operator, setOperator, onStart, onSkip }) {
-  const canStart = operator.firstName.trim().length > 0 && operator.lastName.trim().length > 0;
-  const set = (key) => (e) => setOperator((o) => ({ ...o, [key]: e.target.value }));
   return (
     <>
-      <SimpleSteps step={1} />
       <div className="s-body">
         <div className="s-screen s-fadeup">
-          <div className="s-hero-ic s-hero-ic--accent s-pulse" aria-hidden>
-            <SI.camera size={72} />
-          </div>
-          <h1 className="s-h1">{S.welcome.title}</h1>
+          <h1 className="s-h1" style={{ marginTop: 8 }}>{S.welcome.title}</h1>
           <p className="s-lede">
             {S.welcome.ledeBefore}<b>{S.welcome.ledeBold}</b>{S.welcome.ledeAfter}
           </p>
 
           <div className="s-form">
-            <div className="s-form-row">
-              <div className="s-field">
-                <label htmlFor="op-first">{S.welcome.firstNameLabel}</label>
-                <input
-                  id="op-first"
-                  className="s-input"
-                  type="text"
-                  autoFocus
-                  autoComplete="off"
-                  placeholder={S.welcome.firstNamePlaceholder}
-                  value={operator.firstName}
-                  onChange={set("firstName")} />
-              </div>
-              <div className="s-field">
-                <label htmlFor="op-last">{S.welcome.lastNameLabel}</label>
-                <input
-                  id="op-last"
-                  className="s-input"
-                  type="text"
-                  autoComplete="off"
-                  placeholder={S.welcome.lastNamePlaceholder}
-                  value={operator.lastName}
-                  onChange={set("lastName")} />
+            <div className="s-field" style={{ width: "100%" }}>
+              <label>{S.welcome.needsTitle}</label>
+              <div className="s-needs-box">
+                <ul>
+                  {needs.map((n, i) =>
+                  <li key={n.title}>
+                      <span className="s-checklist-dot" />
+                      <div><b>{n.title}</b><span>{n.text}</span></div>
+                      {i === 0 &&
+                      <button
+                        className="s-refresh-btn"
+                        style={{ marginLeft: "auto", alignSelf: "center" }}
+                        onClick={() => setGreyCardHelp(true)}>
+                          <SI.help size={13} /> {S.camera.shoot.greyCardHelpButton}
+                        </button>
+                      }
+                    </li>
+                  )}
+                </ul>
               </div>
             </div>
-            <LiveClock />
           </div>
         </div>
       </div>
       <SimpleFoot
-        left={canStart ? null : <span>{S.welcome.enterNameHint}</span>}
-        skip={<SkipButton onClick={onSkip} />}
+        left={
+        <span className="s-welcome-foot-info">
+            <span><SI.pin size={14} /> {locationText} · <b>{loc.station || "Camera 1"}</b></span>
+            <span className="s-welcome-foot-sep" />
+            <span>{dateText} · <b>{timeText}</b></span>
+          </span>
+        }
         primary={
-        <button className="s-btn s-btn--primary s-btn--xl" disabled={!canStart} onClick={() => onStart()}>
+        <button className="s-btn s-btn--primary s-btn--xl" onClick={() => onStart()}>
             {S.common.start} <SI.arrow size={20} />
           </button>
         } />
-
+      {greyCardHelp && <GreyCardHelpModal onClose={() => setGreyCardHelp(false)} />}
     </>);
 
 }
@@ -568,13 +595,19 @@ function ScreenWelcome({ operator, setOperator, onStart, onSkip }) {
 // Screen 2 — Walk around the station
 // ============================================================
 const WALK_ICONS = {
-  pole: <SI.pole />, cap: <SI.cap />, plug: <SI.plug />,
-  strobe: <SI.bolt />, back: <SI.backdrop />, floor: <SI.broom />
+  clean: <SI.broom size={26} />, router: <SI.router size={26} />,
+  webcam: <SI.webcam size={26} />, camera: <SI.pole size={26} />, framing: <SI.framing size={26} />, flash: <SI.bolt size={26} />
 };
-// card copy + tutorial steps come from strings.js
-const WALK_ITEMS = Object.keys(WALK_ICONS).map((key) => ({
-  key, icon: WALK_ICONS[key], ...S.walk.items[key]
-}));
+// Card copy comes from strings.js. Each bullet doubles as a "More info"
+// tutorial step (title = bullet text) so guidance is authored once, not
+// twice — items needing extra reference photos beyond their bullets (e.g.
+// different camera mount styles) list them in `extraSteps`.
+const WALK_ITEMS = Object.keys(WALK_ICONS).map((key) => {
+  const item = S.walk.items[key];
+  const bulletSteps = (item.bullets.length ? item.bullets : [item.label]).map((b) => ({ title: b, text: "" }));
+  const extraSteps = (item.extraSteps || []).map((t) => ({ title: t, text: "" }));
+  return { key, icon: WALK_ICONS[key], ...item, steps: [...bulletSteps, ...extraSteps] };
+});
 
 function ScreenWalkAround({ checked, setChecked, onNext, onBack, onSkip }) {
   const toggle = (k) => setChecked((c) => ({ ...c, [k]: !c[k] }));
@@ -586,27 +619,30 @@ function ScreenWalkAround({ checked, setChecked, onNext, onBack, onSkip }) {
 
   return (
     <>
-      <SimpleSteps step={2} />
       <div className="s-body">
-        <div className="s-screen s-screen--wide s-fadeup">
+        <div className="s-screen s-screen--wide s-screen--tight s-fadeup">
           <h1 className="s-h1 s-h1--small">{S.walk.title}</h1>
           <p className="s-lede">{S.walk.lede}</p>
 
-          <div className="s-grid" style={{ marginTop: 4 }}>
+          <div className="s-grid s-grid--checklist" style={{ marginTop: 4 }}>
             {WALK_ITEMS.map((it) =>
             <button
               key={it.key}
-              className={`s-card ${checked[it.key] ? "s-card--on" : ""}`}
+              className={`s-card s-card--checklist ${checked[it.key] ? "s-card--on" : ""}`}
               onClick={() => toggle(it.key)}>
 
-                <div className="s-card-ic">{it.icon}</div>
-                <div>
+                <div className="s-card-head">
+                  <div className="s-card-ic">{it.icon}</div>
                   <div className="s-card-label">{it.label}</div>
-                  <div className="s-card-sub">{it.sub}</div>
+                  <span className="s-card-check">
+                    <SI.check size={16} />
+                  </span>
                 </div>
-                <span className="s-card-check">
-                  <SI.check size={16} />
-                </span>
+                {it.bullets.length > 0 &&
+                <ul className="s-card-bullets">
+                  {it.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                </ul>
+                }
                 <span
                 className="s-card-info"
                 role="button"
@@ -745,6 +781,39 @@ function WalkInfoModal({ item, onClose }) {
 
 }
 
+// Simple one-image, static-text popup — for the "Can't find your grey card?"
+// fallback on the calibration screen. No step pagination, unlike WalkInfoModal.
+function GreyCardHelpModal({ onClose }) {
+  React.useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="s-info" onClick={onClose}>
+      <div className="s-info-card s-tut-card s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <button className="s-info-close" onClick={onClose} aria-label={S.common.close}>
+          <SI.close size={18} />
+        </button>
+        <div className="s-info-head">
+          <h3 className="s-info-title">{S.camera.shoot.greyCardHelpTitle}</h3>
+        </div>
+
+        <TutMedia itemKey="grey-card-help" idx={0} />
+
+        <div className="s-tut-caption s-tut-caption--lines">
+          {S.camera.shoot.greyCardHelpLines.map((line, i) => <p key={i}>{line}</p>)}
+        </div>
+
+        <div className="s-tut-foot" style={{ justifyContent: "flex-end" }}>
+          <button className="s-btn s-btn--primary" onClick={onClose}>{S.common.gotIt}</button>
+        </div>
+      </div>
+    </div>);
+
+}
+
 // ============================================================
 // Screen 3 — Camera check (real detect → capture → grey-card region → apply)
 // Stages: "auto" -> "shoot" -> "select" -> "applied"
@@ -761,6 +830,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
   const [selBox, setSelBox] = React.useState(null);
   const [result, setResult] = React.useState(null); // {analysis, plan, applied, rejected, before, after, refreshFailed}
   const [refreshing, setRefreshing] = React.useState(false);
+  const [greyCardHelp, setGreyCardHelp] = React.useState(false);
 
   // ---------- detection ----------
   const runAuto = React.useCallback(async () => {
@@ -843,7 +913,6 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
 
     return (
       <>
-        <SimpleSteps step={3} />
         <div className="s-body">
           <div className="s-screen s-fadeup">
             <div className={`s-hero-ic ${camError ? "s-hero-ic--fail" : "s-hero-ic--accent s-pulse"}`}>
@@ -917,7 +986,6 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
     };
     return (
       <>
-        <SimpleSteps step={3} />
         <div className="s-body">
           <div className="s-screen s-screen--wide s-screen--compact s-fadeup">
             <div className="s-stage">
@@ -939,6 +1007,23 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
                 <p className="s-lede s-lede--left">
                   {S.camera.shoot.ledeBefore}<b style={{ color: "#a8b0c0" }}>{S.camera.shoot.ledeGreyCard}</b>{S.camera.shoot.ledeAfter}
                 </p>
+                <div className="s-stage-tips">
+                  <div className="s-tip">
+                    <span className="s-tip-num">1</span>
+                    {S.camera.shoot.tip1}
+                  </div>
+                  <div className="s-tip">
+                    <span className="s-tip-num">2</span>
+                    {S.camera.shoot.tip2}
+                  </div>
+                  <div className="s-tip">
+                    <span className="s-tip-num">3</span>
+                    {S.camera.shoot.tip3}
+                  </div>
+                </div>
+                <button className="s-refresh-btn" style={{ alignSelf: "flex-start" }} onClick={() => setGreyCardHelp(true)}>
+                  <SI.help size={13} /> {S.camera.shoot.greyCardHelpButton}
+                </button>
                 {/* last-minute dial changes on the camera → re-pull without leaving the screen */}
                 <div className="s-refresh-row">
                   <button
@@ -949,20 +1034,6 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
                   </button>
                 </div>
                 <CameraStats s={camSettings} />
-                <div className="s-stage-tips">
-                  <div className="s-tip s-tip--compact">
-                    <span className="s-tip-num">1</span>
-                    {S.camera.shoot.tip1}
-                  </div>
-                  <div className="s-tip s-tip--compact">
-                    <span className="s-tip-num">2</span>
-                    {S.camera.shoot.tip2}
-                  </div>
-                  <div className="s-tip s-tip--compact">
-                    <span className="s-tip-num">3</span>
-                    {S.camera.shoot.tip3}
-                  </div>
-                </div>
                 {readFail &&
                 <div className="s-cam-warn">
                   <SI.warn size={16} />
@@ -991,6 +1062,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
               {busy ? <><div className="s-spinner" /> {busyLabel}</> : <><SI.shutter size={22} /> {S.common.takePhoto}</>}
             </button>
           } />
+        {greyCardHelp && <GreyCardHelpModal onClose={() => setGreyCardHelp(false)} />}
       </>);
   }
 
@@ -998,23 +1070,22 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
   if (stage === "select") {
     return (
       <>
-        <SimpleSteps step={3} />
         <div className="s-body">
           <div className="s-screen s-screen--wide s-screen--compact s-fadeup">
             <div className="s-stage">
-              <RegionSelect src={photo} box={selBox} setBox={setSelBox} onDone={onRegion} busy={busy} />
+              <div className="s-stage-photo-col">
+                <RegionSelect src={photo} box={selBox} setBox={setSelBox} onDone={onRegion} busy={busy} />
+                <SettingsStrip s={camSettings} />
+              </div>
               <div className="s-stage-side">
                 <h1 className="s-h1 s-h1--small s-h1--left">
                   {busy ? S.camera.select.titleBusy : S.camera.select.title}
                 </h1>
                 <p className="s-lede s-lede--left">
-                  {busy ?
-                  S.camera.select.ledeBusy :
-                  <>{S.camera.select.ledeBefore}<b style={{ color: "#a8b0c0" }}>{S.camera.select.ledeGreyCard}</b>{S.camera.select.ledeAfter}</>}
+                  {busy ? S.camera.select.ledeBusy : S.camera.select.lede}
                 </p>
-                <SettingsStrip s={camSettings} />
                 {!busy &&
-                <ul className="s-checklist">
+                <ul className="s-checklist s-checklist--grouped">
                   <li>
                     <span className="s-checklist-dot" />
                     <div>
@@ -1131,7 +1202,6 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
 
   return (
     <>
-      <SimpleSteps step={3} />
       <div className="s-body">
         <div className="s-screen s-screen--wide s-fadeup">
           <div className="s-hero-ic s-hero-ic--sm s-hero-ic--pass">
@@ -1397,14 +1467,30 @@ function TapMarker({ x, y }) {
 // position, scalePct resizes, and customSrc swaps the built-in SVG for an
 // uploaded image entirely — all three as a CSS transform on the outer
 // element so the tuned default artwork itself never needs to change.
+const DEFAULT_FRAMING_GUIDE = "assets/framing-guide-default.png";
+// Field-tuned "zero" resting position for the overlay sliders — matches
+// defaultSettings().overlay in main.js. Reset to default returns here.
+const DEFAULT_OVERLAY = { offsetXPct: 0, offsetYPct: 9, scalePct: 87, customImagePath: null };
+
 function CenterGuide({ offsetXPct = 0, offsetYPct = 0, scalePct = 100, customSrc = null }) {
+  // Falls back to the hand-drawn SVG guide below if neither an admin-uploaded
+  // overlay nor the bundled default image can load (e.g. file went missing).
+  const [imgFailed, setImgFailed] = React.useState(false);
+  React.useEffect(() => setImgFailed(false), [customSrc]);
+
   const wrapStyle = {
     position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none",
     transform: `translate(${offsetXPct}%, ${offsetYPct}%) scale(${scalePct / 100})`,
   };
 
-  if (customSrc) {
-    return <img src={customSrc} alt="" style={{ ...wrapStyle, objectFit: "contain" }} />;
+  if (!imgFailed) {
+    return (
+      <img
+        src={customSrc || DEFAULT_FRAMING_GUIDE}
+        alt=""
+        onError={() => setImgFailed(true)}
+        style={{ ...wrapStyle, objectFit: "contain" }} />);
+
   }
 
   const stroke = {
@@ -1558,26 +1644,27 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
   if (stage === "aim") {
     return (
       <>
-        <SimpleSteps step={4} />
         <div className="s-body">
           <div className="s-screen s-screen--wide s-screen--compact s-fadeup">
             <div className="s-stage">
-              <div className="s-photo s-photo--portrait">
-                {photo ?
-                <img src={photo} alt=""
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0.45 }} /> :
-                <div className="s-photo-placeholder">
-                  <SI.camera size={64} />
-                  <span>{S.testPhoto.photoPlaceholder}</span>
+              <div className="s-stage-photo-col">
+                <div className="s-photo s-photo--portrait">
+                  {photo ?
+                  <img src={photo} alt=""
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0.45 }} /> :
+                  <div className="s-photo-placeholder">
+                    <SI.camera size={64} />
+                    <span>{S.testPhoto.photoPlaceholder}</span>
+                  </div>
+                  }
                 </div>
-                }
+                <SettingsStrip s={camSettings} />
               </div>
               <div className="s-stage-side">
                 <h1 className="s-h1 s-h1--small s-h1--left">{adjustNote ? S.testPhoto.retakeTitle : S.testPhoto.aimTitle}</h1>
                 <p className="s-lede s-lede--left">
                   {adjustNote ? S.testPhoto.retakeLede : S.testPhoto.aimLede}
                 </p>
-                <SettingsStrip s={camSettings} />
                 {adjustNote &&
                 <div className="s-cam-warn">
                   <SI.retake size={16} />
@@ -1586,7 +1673,7 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
                 }
                 {/* setup steps only matter on the first shot — skip them on adjust-retakes */}
                 {!adjustNote &&
-                <ul className="s-checklist">
+                <ul className="s-checklist s-checklist--grouped">
                   <li>
                     <span className="s-checklist-dot" />
                     <div>
@@ -1660,29 +1747,30 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
 
   return (
     <>
-      <SimpleSteps step={4} />
       <div className="s-body">
         <div className="s-screen s-screen--wide s-screen--compact s-fadeup">
           <div className="s-stage">
-            <div className="s-photo s-photo--portrait">
-              <img
-                src={photo}
-                alt=""
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              {centered !== true &&
-              <CenterGuide
-                offsetXPct={overlay.offsetXPct}
-                offsetYPct={overlay.offsetYPct}
-                scalePct={overlay.scalePct}
-                customSrc={toFileUrl(overlay.customImagePath)} />
-              }
-              <div className="s-photo-pill s-photo-pill--taken">
-                <SI.check size={14} /> {S.testPhoto.photoTakenPill}
+            <div className="s-stage-photo-col">
+              <div className="s-photo s-photo--portrait">
+                <img
+                  src={photo}
+                  alt=""
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                {centered !== true &&
+                <CenterGuide
+                  offsetXPct={overlay.offsetXPct}
+                  offsetYPct={overlay.offsetYPct}
+                  scalePct={overlay.scalePct}
+                  customSrc={toFileUrl(overlay.customImagePath)} />
+                }
+                <div className="s-photo-pill s-photo-pill--taken">
+                  <SI.check size={14} /> {S.testPhoto.photoTakenPill}
+                </div>
               </div>
+              <SettingsStrip s={camSettings} />
             </div>
             <div className="s-stage-side">
               <h1 className="s-h1 s-h1--small s-h1--left">{S.testPhoto.reviewTitle}</h1>
-              <SettingsStrip s={camSettings} />
 
               <div className="s-qa">
                 {/* Card 1 — centered */}
@@ -1809,37 +1897,48 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
 // ============================================================
 // Screen 5 — Done
 // ============================================================
-function ScreenDone({ onRestart, operator, run }) {
-  const firstName = (operator && operator.firstName.trim()) || S.done.fallbackName;
+function ScreenDone({ onRestart, run }) {
   const durationSec = run ? Math.max(0, Math.round((Date.now() - new Date(run.startedAt).getTime()) / 1000)) : null;
   const durationText = durationSec == null ? "—" :
   durationSec >= 60 ? `${Math.floor(durationSec / 60)} ${S.done.minutes} ${durationSec % 60} ${S.done.seconds}` : `${durationSec} ${S.done.seconds}`;
+  const [closing, setClosing] = React.useState(false);
+  const [rpsError, setRpsError] = React.useState(false);
 
-  const launch = () => {
-    const e = document.getElementById("simple-launch");
-    if (e) {
-      e.style.opacity = "1";
-      e.style.pointerEvents = "auto";
-    }
+  const launch = async () => {
+    if (closing) return;
+    setClosing(true);
     if (run && window.cfc && window.cfc.runs) {
       window.cfc.runs.save({
         type: "check_completed",
         runId: run.id,
-        operator: { firstName: operator.firstName.trim(), lastName: operator.lastName.trim() },
         startedAt: run.startedAt,
         completedAt: new Date().toISOString(),
         durationSec
       }).catch(() => {});
     }
-    // free the USB session so RPS can attach to the camera, then close
+    // free the USB session so RPS can attach to the camera, then try to open it
+    if (cam) { try { await cam.release(); } catch {} }
+    let rpsOk = true;
+    if (window.cfc && window.cfc.launchRps) {
+      const r = await window.cfc.launchRps().catch(() => ({ ok: false }));
+      rpsOk = !!(r && r.ok);
+    }
     const done = () => window.cfc ? window.cfc.close() : null;
-    if (cam) cam.release().then(() => setTimeout(done, 1600)).catch(() => setTimeout(done, 1600));
-    else setTimeout(done, 1800);
+    if (!rpsOk) {
+      setRpsError(true);
+      setTimeout(done, 2200); // give them a moment to read why before closing anyway
+      return;
+    }
+    const e = document.getElementById("simple-launch");
+    if (e) {
+      e.style.opacity = "1";
+      e.style.pointerEvents = "auto";
+    }
+    setTimeout(done, 1600);
   };
 
   return (
     <>
-      <SimpleSteps step={5} />
       <div className="s-body">
         <div className="s-screen s-fadeup">
           <div className="s-hero-ic s-hero-ic--pass">
@@ -1847,8 +1946,14 @@ function ScreenDone({ onRestart, operator, run }) {
           </div>
           <h1 className="s-h1">{S.done.title}</h1>
           <p className="s-lede">
-            {fmt(S.done.lede, { name: firstName })}
+            {S.done.lede}
           </p>
+
+          {rpsError &&
+          <div className="s-cam-error" style={{ maxWidth: 480 }}>
+            <SI.warn size={16} /> {S.done.rpsNotFound}
+          </div>
+          }
 
           <div className="s-result">
             <div className="s-checklist-line"><SI.check size={18} /> {S.done.result1}</div>
@@ -1859,10 +1964,10 @@ function ScreenDone({ onRestart, operator, run }) {
       </div>
       <SimpleFoot
         left={<span>{S.done.finishedIn} <b style={{ color: "var(--text)" }}>{durationText}</b></span>}
-        back={<button className="s-btn s-btn--back" onClick={onRestart}>{S.done.startOver}</button>}
+        back={<button className="s-btn s-btn--back" onClick={onRestart} disabled={closing}>{S.done.startOver}</button>}
         primary={
-        <button className="s-btn s-btn--primary s-btn--xl" onClick={launch}>
-            <SI.camera size={22} /> {S.done.closeAndOpenRps}
+        <button className="s-btn s-btn--primary s-btn--xl" onClick={launch} disabled={closing}>
+            {closing ? <><div className="s-spinner" /> {S.done.closing}</> : <><SI.camera size={22} /> {S.done.closeAndOpenRps}</>}
           </button>
         } />
 
@@ -1873,7 +1978,8 @@ function ScreenDone({ onRestart, operator, run }) {
 // ============================================================
 // Help modal
 // ============================================================
-function HelpModal({ onClose }) {
+function HelpModal({ onClose, settings }) {
+  const contacts = settings.helpContacts || [];
   return (
     <div className="s-help" onClick={onClose}>
       <div className="s-help-card" onClick={(e) => e.stopPropagation()}>
@@ -1887,27 +1993,22 @@ function HelpModal({ onClose }) {
           {S.help.bodyLine2}
         </p>
         <div className="s-help-contacts">
-          <div className="s-help-contact">
-            <div className="s-help-eyebrow">{S.help.contact1Eyebrow}</div>
-            <div className="s-help-name">{S.help.contact1Name}</div>
-            <a className="s-help-phone" href={"tel:" + S.help.contact1Tel}>
-              <SI.phone size={16} /> {S.help.contact1Phone}
-            </a>
-          </div>
-          <div className="s-help-contact">
-            <div className="s-help-eyebrow">{S.help.contact2Eyebrow}</div>
-            <div className="s-help-name">{S.help.contact2Name}</div>
-            <a className="s-help-phone" href={"tel:" + S.help.contact2Tel}>
-              <SI.phone size={16} /> {S.help.contact2Phone}
-            </a>
-          </div>
-          <div className="s-help-contact s-help-contact--wide">
-            <div className="s-help-eyebrow">{S.help.contact3Eyebrow}</div>
-            <div className="s-help-name">{S.help.contact3Name}</div>
-            <a className="s-help-phone" href={"tel:" + S.help.contact3Tel}>
-              <SI.phone size={16} /> {S.help.contact3Phone}
-            </a>
-          </div>
+          {contacts.map((c, i) =>
+          <div className="s-help-contact" key={i}>
+              <div className="s-help-eyebrow">{c.title}</div>
+              {c.description && <div className="s-help-name">{c.description}</div>}
+              {c.phone &&
+            <div className="s-help-phone">
+                  <SI.phone size={16} /> {c.phone}
+                </div>
+            }
+              {c.email &&
+            <div className="s-help-phone">
+                  <SI.mail size={16} /> {c.email}
+                </div>
+            }
+            </div>
+          )}
         </div>
         <div className="s-help-actions">
           <button className="s-btn s-btn--ghost" onClick={onClose}>{S.common.close}</button>
@@ -1932,6 +2033,15 @@ function SettingsScreen({ settings, onSave, onClose }) {
   const [draft, setDraft] = React.useState(settings);
   const [saving, setSaving] = React.useState(false);
   const [camWb, setCamWb] = React.useState(null); // wbValues from a connected camera, if any
+  const [activeGroup, setActiveGroup] = React.useState("general");
+
+  const groups = [
+    { key: "general", label: T.groupGeneral, icon: <SI.pin size={16} /> },
+    { key: "limits", label: T.groupLimits, icon: <SI.gear size={16} /> },
+    { key: "overlay", label: T.groupOverlay, icon: <SI.framing size={16} /> },
+    { key: "rps", label: T.groupRps, icon: <SI.plug size={16} /> },
+    { key: "help", label: T.groupHelp, icon: <SI.help size={16} /> }
+  ];
 
   React.useEffect(() => {
     if (cam) {
@@ -1968,6 +2078,23 @@ function SettingsScreen({ settings, onSave, onClose }) {
     if (p) setField("overlay", "customImagePath", p);
   };
 
+  const updateContact = (i, field, value) => {
+    setDraft((d) => {
+      const contacts = [...(d.helpContacts || [])];
+      contacts[i] = { ...contacts[i], [field]: value };
+      return { ...d, helpContacts: contacts };
+    });
+  };
+  const addContact = () => {
+    setDraft((d) => ({
+      ...d,
+      helpContacts: [...(d.helpContacts || []), { title: "", description: "", phone: "", email: "" }]
+    }));
+  };
+  const removeContact = (i) => {
+    setDraft((d) => ({ ...d, helpContacts: (d.helpContacts || []).filter((_, idx) => idx !== i) }));
+  };
+
   const save = async () => {
     setSaving(true);
     let result = draft;
@@ -1987,26 +2114,46 @@ function SettingsScreen({ settings, onSave, onClose }) {
         </button>
         <h2 className="s-settings-title">{T.title}</h2>
 
+        <div className="s-settings-layout">
+        <nav className="s-settings-nav">
+          {groups.map((g) =>
+          <button
+            key={g.key}
+            className={`s-settings-nav-item ${activeGroup === g.key ? "s-settings-nav-item--on" : ""}`}
+            onClick={() => setActiveGroup(g.key)}>
+              {g.icon} {g.label}
+            </button>
+          )}
+        </nav>
         <div className="s-settings-body">
+          {activeGroup === "general" && <>
           <section className="s-settings-section">
             <h3>{T.locationTitle}</h3>
             <div className="s-form-row">
               <div className="s-field">
-                <label>{T.locationLabel}</label>
+                <label>{T.locationNumberLabel}</label>
                 <input
                   className="s-input"
-                  value={draft.location.label}
-                  placeholder={T.locationPlaceholder}
-                  onChange={(e) => setField("location", "label", e.target.value)} />
+                  value={draft.location.number}
+                  placeholder={draft.hostname || T.locationNumberPlaceholder}
+                  onChange={(e) => setField("location", "number", e.target.value)} />
               </div>
               <div className="s-field">
-                <label>{T.stationLabel}</label>
+                <label>{T.locationNameLabel}</label>
                 <input
                   className="s-input"
-                  value={draft.location.station}
-                  placeholder={T.stationPlaceholder}
-                  onChange={(e) => setField("location", "station", e.target.value)} />
+                  value={draft.location.name}
+                  placeholder={T.locationNameNotFound} // name only ever comes from the mall CSV lookup
+                  onChange={(e) => setField("location", "name", e.target.value)} />
               </div>
+            </div>
+            <div className="s-field" style={{ marginTop: 14 }}>
+              <label>{T.stationLabel}</label>
+              <input
+                className="s-input"
+                value={draft.location.station}
+                placeholder={T.stationPlaceholder}
+                onChange={(e) => setField("location", "station", e.target.value)} />
             </div>
           </section>
 
@@ -2014,9 +2161,9 @@ function SettingsScreen({ settings, onSave, onClose }) {
             <h3>{T.dataTitle}</h3>
             <div className="s-field">
               <label>{T.dataFolderLabel}</label>
-              <div style={{ display: "flex", gap: 10 }}>
-                <input className="s-input" style={{ flex: 1 }} value={draft.dataDir} readOnly />
-                <button className="s-btn s-btn--ghost" onClick={pickFolder}>{T.changeFolder}</button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input className="s-input" value={draft.dataDir} readOnly />
+                <button className="s-btn s-btn--ghost" style={{ width: "100%" }} onClick={pickFolder}>{T.changeFolder}</button>
               </div>
             </div>
             <label className="s-settings-toggle">
@@ -2027,7 +2174,9 @@ function SettingsScreen({ settings, onSave, onClose }) {
               {T.skipPromptToggle}
             </label>
           </section>
+          </>}
 
+          {activeGroup === "limits" &&
           <section className="s-settings-section">
             <h3>{T.limitsTitle}</h3>
             <div className="s-field">
@@ -2076,7 +2225,9 @@ function SettingsScreen({ settings, onSave, onClose }) {
               </div>
             </div>
           </section>
+          }
 
+          {activeGroup === "overlay" &&
           <section className="s-settings-section">
             <h3>{T.overlayTitle}</h3>
             <div className="s-settings-overlay-row">
@@ -2096,31 +2247,94 @@ function SettingsScreen({ settings, onSave, onClose }) {
                     onChange={(e) => setField("overlay", "offsetXPct", Number(e.target.value))} />
                 </div>
                 <div className="s-field">
-                  <label>{T.overlayOffsetY} ({draft.overlay.offsetYPct}%)</label>
+                  <label>{T.overlayOffsetY} ({draft.overlay.offsetYPct - DEFAULT_OVERLAY.offsetYPct}%)</label>
                   <input
-                    type="range" min="-30" max="30"
-                    value={draft.overlay.offsetYPct}
-                    onChange={(e) => setField("overlay", "offsetYPct", Number(e.target.value))} />
+                    type="range" min={-30} max={30}
+                    value={draft.overlay.offsetYPct - DEFAULT_OVERLAY.offsetYPct}
+                    onChange={(e) => setField("overlay", "offsetYPct", DEFAULT_OVERLAY.offsetYPct + Number(e.target.value))} />
                 </div>
                 <div className="s-field">
-                  <label>{T.overlayScale} ({draft.overlay.scalePct}%)</label>
+                  <label>{T.overlayScale} ({draft.overlay.scalePct - DEFAULT_OVERLAY.scalePct}%)</label>
                   <input
-                    type="range" min="50" max="150"
-                    value={draft.overlay.scalePct}
-                    onChange={(e) => setField("overlay", "scalePct", Number(e.target.value))} />
+                    type="range" min={-50} max={50}
+                    value={draft.overlay.scalePct - DEFAULT_OVERLAY.scalePct}
+                    onChange={(e) => setField("overlay", "scalePct", DEFAULT_OVERLAY.scalePct + Number(e.target.value))} />
                 </div>
                 <div style={{ display: "flex", gap: 10 }}>
                   <button className="s-btn s-btn--ghost" onClick={pickImage}>{T.overlayUpload}</button>
                   <button
                     className="s-btn s-btn--ghost"
-                    disabled={!draft.overlay.customImagePath}
-                    onClick={() => setField("overlay", "customImagePath", null)}>
+                    disabled={
+                    draft.overlay.customImagePath == null &&
+                    draft.overlay.offsetXPct === DEFAULT_OVERLAY.offsetXPct &&
+                    draft.overlay.offsetYPct === DEFAULT_OVERLAY.offsetYPct &&
+                    draft.overlay.scalePct === DEFAULT_OVERLAY.scalePct
+                    }
+                    onClick={() => setField("overlay", null, { ...DEFAULT_OVERLAY })}>
                     {T.overlayReset}
                   </button>
                 </div>
               </div>
             </div>
           </section>
+          }
+
+          {activeGroup === "rps" &&
+          <section className="s-settings-section">
+            <h3>{T.rpsTitle}</h3>
+            <div className="s-field">
+              <label>{T.rpsPathLabel}</label>
+              <input
+                className="s-input"
+                value={draft.rpsPath}
+                placeholder={T.rpsPathPlaceholder}
+                onChange={(e) => setField("rpsPath", null, e.target.value)} />
+            </div>
+          </section>
+          }
+
+          {activeGroup === "help" &&
+          <section className="s-settings-section">
+            <h3>{T.helpTitle}</h3>
+            <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginBottom: 14 }} onClick={addContact}>{T.helpAdd}</button>
+            {(draft.helpContacts || []).map((c, i) =>
+            <div key={i} className="s-help-edit-row">
+                <div className="s-form-row">
+                  <div className="s-field">
+                    <label>{T.helpFieldTitle}</label>
+                    <input className="s-input" value={c.title} onChange={(e) => updateContact(i, "title", e.target.value)} />
+                  </div>
+                  <div className="s-field">
+                    <label>{T.helpFieldDescription}</label>
+                    <input className="s-input" value={c.description} onChange={(e) => updateContact(i, "description", e.target.value)} />
+                  </div>
+                </div>
+                <div className="s-form-row" style={{ marginTop: 8 }}>
+                  <div className="s-field">
+                    <label>{T.helpFieldPhone}</label>
+                    <input
+                      className="s-input"
+                      value={c.phone}
+                      placeholder="(555) 123-4567"
+                      onChange={(e) => updateContact(i, "phone", e.target.value)} />
+                  </div>
+                  <div className="s-field">
+                    <label>{T.helpFieldEmail}</label>
+                    <input
+                      className="s-input"
+                      value={c.email}
+                      placeholder="name@example.com"
+                      onChange={(e) => updateContact(i, "email", e.target.value)} />
+                  </div>
+                </div>
+                <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginTop: 8 }} onClick={() => removeContact(i)}>
+                  {T.helpRemove}
+                </button>
+              </div>
+            )}
+          </section>
+          }
+        </div>
         </div>
 
         <div className="s-tut-foot">
@@ -2186,14 +2400,15 @@ function SimpleApp() {
   const [step, setStep] = React.useState(1);
   const [walkChecked, setWalkChecked] = React.useState({});
   const [help, setHelp] = React.useState(false);
-  const [operator, setOperator] = React.useState({ firstName: "", lastName: "" });
   const [run, setRun] = React.useState(null); // { id, startedAt }
   const [settings, setSettings] = React.useState({
-    location: { label: "", station: "Camera 1" },
+    location: { number: "", name: "", station: "Camera" },
     dataDir: "",
     skipReasonPrompt: true,
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
-    overlay: { offsetXPct: 0, offsetYPct: 0, scalePct: 100, customImagePath: null },
+    overlay: { ...DEFAULT_OVERLAY },
+    rpsPath: "",
+    helpContacts: [],
   });
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   const [skipPrompt, setSkipPrompt] = React.useState(null); // { screenKey, screenLabel } while the reason modal is open
@@ -2207,28 +2422,25 @@ function SimpleApp() {
 
   const next = () => setStep((s) => Math.min(5, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
-  const restart = () => {setStep(1);setWalkChecked({});setRun(null);setOperator({ firstName: "", lastName: "" });};
+  const restart = () => {setStep(1);setWalkChecked({});setRun(null);};
 
-  // Operator signed in — open a check run and persist it (future: POST to the
-  // API). Returns the new runId so a Welcome-screen skip can log against it.
-  const startCheck = (operatorOverride) => {
-    const finalOperator = operatorOverride || operator;
+  // Welcome's Start button opens a check run and persists it (future: POST
+  // to the API).
+  const startCheck = () => {
     const id = "cfc-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
     const startedAt = new Date().toISOString();
-    if (operatorOverride) setOperator(operatorOverride);
     setRun({ id, startedAt });
     if (window.cfc && window.cfc.runs) {
       window.cfc.runs.save({
         type: "check_started",
         runId: id,
-        operator: { firstName: finalOperator.firstName.trim(), lastName: finalOperator.lastName.trim() },
+        locationNumber: (settings.location && settings.location.number) || null,
+        locationName: (settings.location && settings.location.name) || null,
         station: (settings.location && settings.location.station) || "Camera 1",
-        set: (settings.location && settings.location.label) || "Santa Set A",
         startedAt
       }).catch(() => {});
     }
     next();
-    return id;
   };
 
   const logSkip = (runId, screenKey, reason) => {
@@ -2238,24 +2450,17 @@ function SimpleApp() {
     }).catch(() => {});
   };
 
-  // Welcome has no run yet — skipping it starts one (with a placeholder name
-  // if none was entered) and logs the skip against that new run.
-  const skipWelcome = (reason) => {
-    const placeholder = !operator.firstName.trim() ? { firstName: "Unknown", lastName: "Operator" } : null;
-    logSkip(startCheck(placeholder), "welcome", reason);
-  };
-
   const requestSkip = (screenKey, screenLabel) => {
     if (settings.skipReasonPrompt) { setSkipPrompt({ screenKey, screenLabel }); return; }
-    if (screenKey === "welcome") skipWelcome(null);
-    else { logSkip(run && run.id, screenKey, null); next(); }
+    logSkip(run && run.id, screenKey, null);
+    next();
   };
 
   const confirmSkip = (reason) => {
     const { screenKey } = skipPrompt;
     setSkipPrompt(null);
-    if (screenKey === "welcome") skipWelcome(reason);
-    else { logSkip(run && run.id, screenKey, reason); next(); }
+    logSkip(run && run.id, screenKey, reason);
+    next();
   };
 
   // Keyboard nav
@@ -2273,11 +2478,11 @@ function SimpleApp() {
 
   const renderScreen = () => {
     switch (step) {
-      case 1:return <ScreenWelcome operator={operator} setOperator={setOperator} onStart={startCheck} onSkip={() => requestSkip("welcome", S.steps[0])} />;
+      case 1:return <ScreenWelcome onStart={startCheck} settings={settings} />;
       case 2:return <ScreenWalkAround checked={walkChecked} setChecked={setWalkChecked} onNext={next} onBack={back} onSkip={() => requestSkip("walkaround", S.steps[1])} />;
       case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} settings={settings} />;
       case 4:return <ScreenTestPhoto onNext={next} onBack={back} onSkip={() => requestSkip("testphoto", S.steps[3])} settings={settings} />;
-      case 5:return <ScreenDone onRestart={restart} operator={operator} run={run} />;
+      case 5:return <ScreenDone onRestart={restart} run={run} />;
       default:return null;
     }
   };
@@ -2295,9 +2500,9 @@ function SimpleApp() {
           overflow: "hidden"
         }}>
           <div className="s-app">
-            <SimpleTop openHelp={() => setHelp(true)} openSettings={() => setSettingsOpen(true)} />
+            <SimpleTop openHelp={() => setHelp(true)} openSettings={() => setSettingsOpen(true)} step={step} />
             {renderScreen()}
-            {help && <HelpModal onClose={() => setHelp(false)} />}
+            {help && <HelpModal onClose={() => setHelp(false)} settings={settings} />}
             {settingsOpen &&
             <SettingsScreen
               settings={settings}

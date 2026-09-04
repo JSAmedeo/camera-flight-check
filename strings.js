@@ -49,9 +49,16 @@ window.CFC_STRINGS = {
     cancel: "Cancel",
     save: "Save changes",
     saving: "Saving…",
+    groupGeneral: "General",
+    groupLimits: "Camera limits",
+    groupOverlay: "Test-photo overlay",
+    groupRps: "RPS launch",
+    groupHelp: "Need Help contacts",
     locationTitle: "Location & station",
-    locationLabel: "Location",
-    locationPlaceholder: "e.g. Santa Set A",
+    locationNumberLabel: "Location number",
+    locationNumberPlaceholder: "Not detected",
+    locationNameLabel: "Location name",
+    locationNameNotFound: "Not Found",
     stationLabel: "Station",
     stationPlaceholder: "e.g. Camera 1",
     dataTitle: "Data & logging",
@@ -70,21 +77,30 @@ window.CFC_STRINGS = {
     overlayScale: "Scale",
     overlayUpload: "Upload image…",
     overlayReset: "Reset to default",
+    rpsTitle: "RPS launch",
+    rpsPathLabel: "RPS executable path",
+    rpsPathPlaceholder: "C:\\CentricsRPSClient\\bin\\CentricsRPSClient.exe",
+    helpTitle: "Need Help contacts",
+    helpFieldTitle: "Title",
+    helpFieldDescription: "Description",
+    helpFieldPhone: "Phone",
+    helpFieldEmail: "Email",
+    helpRemove: "Remove",
+    helpAdd: "Add contact",
   },
 
   // ---- top bar ----
   app: {
-    title: "Camera Check",
-    subtitle: "Run daily or as needed",
-    station: "Santa Set A · ",
-    stationBold: "Camera 1",
+    title: "Pre-Flight Ops Check",
+    locationNumberOnly: "Location {number}",
+    locationUnknown: "Location not set",
     simulatorBadge: "Simulator",
     getHelp: "Get help",
     settings: "Settings",
   },
 
   // ---- step dots ----
-  steps: ["Welcome", "Walk-around", "Camera", "Test photo", "Done"],
+  steps: ["Welcome", "Set Checklist", "Camera", "Test photo", "Done"],
 
   // ---- screen 1: welcome / sign-in ----
   welcome: {
@@ -92,16 +108,20 @@ window.CFC_STRINGS = {
     ledeBefore: "We'll check a few things together before your shift starts. It takes ",
     ledeBold: "about 4 minutes",
     ledeAfter: ".",
-    firstNameLabel: "First name",
-    firstNamePlaceholder: "First name",
-    lastNameLabel: "Last name",
-    lastNamePlaceholder: "Last name",
-    enterNameHint: "Enter your name to begin",
+    needsTitle: "What you'll need",
+    need1Title: "Grey card",
+    need1Text: "Used to calibrate the camera's white balance and exposure.",
+    need2Title: "Character in the chair",
+    need2Text: "Have Santa or Bunny seated and ready for the test photo.",
+    need3Title: "Camera connected and powered on",
+    need3Text: "Tethered to this computer and turned on.",
+    need4Title: "Flash on",
+    need4Text: "Strobe or flash powered on and ready to fire.",
   },
 
-  // ---- screen 2: walk-around ----
+  // ---- screen 2: set checklist ----
   walk: {
-    title: "Quick walk-around",
+    title: "Set checklist",
     lede: "Look at each thing at your station and tap it off when it's good.",
     checkedOff: "checked off",
     tutorial: {
@@ -110,55 +130,57 @@ window.CFC_STRINGS = {
       placeholderTitle: "Image coming soon",
       placeholderHint: "To show a photo here, add this file:",
     },
-    // Six checklist cards. Each has 3 tutorial steps (title + caption).
+    // Seven checklist cards. Each bullet shows on the card itself AND
+    // doubles as a "More info" tutorial step — see WALK_ITEMS in the JSX.
     items: {
-      pole: {
-        label: "Camera is on the pole",
-        sub: "Mounted and tight",
-        steps: [
-        { title: "Clamp is tight", text: "Clamp is tight on the pole — give it a gentle wiggle, nothing moves." },
-        { title: "Camera sits vertical", text: "Grip is positioned with the camera mounted vertically." },
-        { title: "Cables have slack", text: "Cables are connected and have a little slack — no tension on the ports." }],
+      clean: {
+        label: "Set is clean",
+        bullets: [
+        "Personal items are out of sight",
+        "Road case and countertops clear of clutter",
+        "Fans are out of camera framing"],
+
       },
-      cap: {
-        label: "Lens cap is off",
-        sub: "Cap removed from the lens",
-        steps: [
-        { title: "Cap comes all the way off", text: "Lens cap is fully off — not just loose on the front." },
-        { title: "Cap goes on its hook", text: "Cap is on its hook or in the drawer, not balanced on the rig." },
-        { title: "Front of the lens is clean", text: "Front of the lens looks clean — no smudges or dust specks." }],
+      router: {
+        label: "Router is powered on and online",
+        bullets: [
+        "Cradlepoint has 3 or 4 blue bars",
+        "Verizon router has all lights solid",
+        "POS, camera, and reprint computers are connected/online"],
+
       },
-      plug: {
-        label: "Camera is plugged in",
-        sub: "USB cable to the computer",
-        steps: [
-        { title: "Fully seated in the camera", text: "USB cable is fully seated in the camera — no gap at the port." },
-        { title: "Into the computer's blue port", text: "Other end is plugged into the computer's blue USB port." },
-        { title: "A little slack, not tight", text: "Cable has a little slack — not pulled tight across the pole." }],
+      webcam: {
+        label: "Stura camera is ready",
+        bullets: [
+        "Webcam is mounted to the pole, facing the character",
+        "Flash wire harness isn't blocking the lens",
+        "Green light is on"],
+
       },
-      strobe: {
-        label: "Strobe light is on",
-        sub: "Green light is showing",
-        steps: [
-        { title: "Power switch flipped ON", text: "Power switch on the back of the strobe is flipped ON." },
-        { title: "Green light, not red", text: "Green \"ready\" light is showing — not red and not blinking." },
-        { title: "Modeling lamp dial to OFF", text: "Modeling lamp dial is set to OFF so it doesn't wash out the photo." }],
+      camera: {
+        label: "Camera is connected",
+        bullets: [
+        "Mounted to the pole",
+        "All 3 cables connected (data, power, flash)",
+        "Power is on"],
+
+        extraSteps: ["Pole clamp mount", "Desk or counter mount"],
       },
-      back: {
-        label: "Backdrop looks good",
-        sub: "Straight, no wrinkles",
-        steps: [
-        { title: "Hangs straight", text: "Backdrop hangs straight — not pulled to one side." },
-        { title: "No wrinkles where guests stand", text: "No visible wrinkles or folds in the middle 6 ft (where guests stand)." },
-        { title: "Bottom edge tucked under the mat", text: "Bottom edge is tucked smoothly under the floor mat." }],
+      framing: {
+        label: "Camera is framed correctly",
+        bullets: [
+        "Camera is in vertical orientation",
+        "Character takes up the majority of the shot",
+        "Not too much headroom above"],
+
       },
-      floor: {
-        label: "Floor is clear",
-        sub: "No bags or loose cables",
-        steps: [
-        { title: "No bags or personal items", text: "No bags, jackets, or personal items inside the photo area." },
-        { title: "No cables where guests walk", text: "No loose cables crossing where guests will walk or stand." },
-        { title: "Mat is flat — no curled corners", text: "Floor mat is flat and clean — no curled corners." }],
+      flash: {
+        label: "Flash connected/tested",
+        bullets: [
+        "Flash sync cable connected to both flash and camera hot shoe adapter",
+        "Umbrella or softbox installed",
+        "Hot shoe adapter fully seated — not backwards"],
+
       },
     },
   },
@@ -187,6 +209,15 @@ window.CFC_STRINGS = {
       tip1: "Hand the grey card to Santa/Bunny.",
       tip2: "Have them hold it flat against their chest, facing the camera.",
       tip3: "When they're ready, take the photo.",
+      greyCardHelpButton: "Can't find your grey card?",
+      greyCardHelpTitle: "About your grey card",
+      greyCardHelpLines: [
+        "Every location is provided a grey card in a clear sleeve, along with startup documentation.",
+        "The grey card is a thick piece of cardboard used to calibrate white balance.",
+        "Be sure to keep this handy for daily camera calibrations.",
+        "If you don't have your grey card, contact logistics to have one shipped out.",
+        "You can still run this calibration by selecting a white area in the photo instead."
+      ],
       photoPlaceholder: "The photo will appear here",
       refreshSettings: "Refresh settings",
       refreshing: "Refreshing…",
@@ -198,11 +229,9 @@ window.CFC_STRINGS = {
       autoModeWarnAfter: ", then re-check.",
     },
     select: {
-      title: "Select the grey card",
+      title: "Drag a box over the grey card",
       titleBusy: "Got it — adjusting…",
-      ledeBefore: "Drag a box over the ",
-      ledeGreyCard: "grey card",
-      ledeAfter: " in the photo. A single tap works too.",
+      lede: "Make sure to select the whole card — it's okay if the box catches a little of the area just outside it. A single tap works too, but may not give us enough data for an accurate calibration.",
       ledeBusy: "Hang tight — we're using that area to balance the camera.",
       pill: "Drag a box over the grey card",
       balancing: "Balancing camera…",
@@ -218,7 +247,7 @@ window.CFC_STRINGS = {
       title: "Your camera is ready",
       lede: "We used the grey card to measure the photo — here's what we found and what we changed.",
       foundHead: "What we found",
-      fixedHead: "What we fixed",
+      fixedHead: "What we changed",
       // measurements
       brightnessOnTarget: "Brightness was right on target.",
       brightnessWithin: "Brightness was about {n} stop {dir} — within the good range, no change needed.",
@@ -290,9 +319,9 @@ window.CFC_STRINGS = {
     looksGood: "Looks good",
     change: "Change",
     q1Title: "Is the character centered?",
-    q1Sub: "Use the dotted guide — the character and chair should sit inside it.",
+    q1Sub: "Use the Framing Guide as a reference to position the character — with the character centered, you'll be able to frame in and out depending on the number of guests.",
     q1Help: "Adjust the camera on the pole until the character sits inside the dotted guide, then take another photo.",
-    q2Title: "Is the photo crisp and not blurry?",
+    q2Title: "Is the photo clear?",
     q2Sub: "Look closely at the face and suit trim — details should be sharp.",
     q2HelpBefore: "Check the auto focus: the lens switch should be on ",
     q2HelpAF: "AF",
@@ -313,8 +342,7 @@ window.CFC_STRINGS = {
   // ---- screen 5: done ----
   done: {
     title: "You're all set!",
-    lede: "Your station is ready. Have a great shift, {name}.",
-    fallbackName: "there",
+    lede: "Your station is ready. Have a great shift.",
     result1: "Station looks good",
     result2: "Camera works and is set up correctly",
     result3: "Test photo turned out well",
@@ -323,7 +351,9 @@ window.CFC_STRINGS = {
     seconds: "sec",
     startOver: "Start over",
     closeAndOpenRps: "Close Utility / Open RPS",
+    closing: "Closing…",
     launching: "Opening Photo App…",
+    rpsNotFound: "RPS not found — closing utility.",
   },
 
   // ---- help modal ----
@@ -331,17 +361,5 @@ window.CFC_STRINGS = {
     title: "Need help?",
     bodyLine1: "For operational questions or anything you're not sure about, contact your local or district manager.",
     bodyLine2: "For technical issues, contact the support helpdesk.",
-    contact1Eyebrow: "Local Manager",
-    contact1Name: "",
-    contact1Phone: "(555) 123-4567",
-    contact1Tel: "+15551234567",
-    contact2Eyebrow: "District Manager",
-    contact2Name: "Alex Rivera",
-    contact2Phone: "(555) 987-6543",
-    contact2Tel: "+15559876543",
-    contact3Eyebrow: "Support Helpdesk",
-    contact3Name: "Technical issues",
-    contact3Phone: "1 (800) 555-0199",
-    contact3Tel: "+18005550199",
   },
 };

@@ -15,7 +15,7 @@
   /* ===== Frameless-window chrome (Electron) ===== */
   /* Round the app shell — the outermost wrapper SimpleApp renders */
   #simple-root > div:first-child {
-    border-radius: 14px;
+    border-radius: 9px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.09);
   }
@@ -30,7 +30,7 @@
   .s-win-btn {
     width: 38px; height: 38px;
     display: grid; place-items: center;
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 7px;
     color: var(--muted); cursor: pointer; padding: 0;
     transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
@@ -48,7 +48,7 @@
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 1px; overflow: hidden;
     background: var(--line-soft);
-    border: 1px solid var(--line); border-radius: 12px;
+    border: 1px solid var(--line); border-radius: 8px;
     margin: 6px 0 2px;
   }
   .s-stat {
@@ -61,9 +61,9 @@
   .s-stat-v { color: var(--text); font-weight: 500; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   .s-settings-strip {
-    display: inline-flex; align-items: center; gap: 18px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
     padding: 10px 16px; margin: 6px 0 2px;
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 7px;
     font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--muted);
   }
   .s-settings-strip b { color: var(--text); font-weight: 600; }
@@ -75,21 +75,21 @@
   }
   .s-cam-error {
     display: flex; align-items: center; gap: 10px;
-    margin-top: 10px; padding: 12px 14px; border-radius: 10px;
+    margin-top: 10px; padding: 12px 14px; border-radius: 7px;
     background: var(--fail-soft); border: 1px solid rgba(220, 38, 38, 0.35);
     color: var(--text-2); font-size: 14px; line-height: 1.4; text-align: left;
   }
   .s-cam-error svg { color: var(--fail); flex: 0 0 auto; }
   .s-cam-warn {
     display: flex; align-items: center; gap: 10px;
-    margin-top: 10px; padding: 12px 14px; border-radius: 10px;
+    margin-top: 10px; padding: 12px 14px; border-radius: 7px;
     background: var(--warn-soft); border: 1px solid rgba(234, 179, 8, 0.4);
     color: var(--text-2); font-size: 14px; line-height: 1.4; text-align: left;
   }
   .s-cam-warn svg { color: var(--warn); flex: 0 0 auto; }
   .s-cam-warn button {
     margin-left: auto; flex: 0 0 auto;
-    height: 32px; padding: 0 12px; border-radius: 8px;
+    height: 32px; padding: 0 12px; border-radius: 6px;
     background: var(--card); border: 1px solid var(--line); color: var(--text);
     font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
   }
@@ -97,7 +97,7 @@
   .s-hero-ic--fail { background: var(--fail-soft); color: var(--fail); border: 1px solid rgba(220, 38, 38, 0.4); }
   /* Welcome-screen operator form */
   .s-form {
-    width: 100%; max-width: 560px;
+    width: 100%; max-width: 720px;
     display: flex; flex-direction: column; gap: 16px;
     margin-top: 8px;
   }
@@ -109,7 +109,7 @@
   }
   .s-input {
     height: 56px; padding: 0 18px;
-    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
     color: var(--text); font-family: inherit; font-size: 19px; letter-spacing: -0.005em;
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
@@ -122,7 +122,7 @@
   .s-datetime {
     display: flex; align-items: center; justify-content: center; gap: 12px;
     padding: 14px 18px;
-    background: var(--card-soft); border: 1px solid var(--line-soft); border-radius: 12px;
+    background: var(--card-soft); border: 1px solid var(--line-soft); border-radius: 8px;
     color: var(--text-2); font-size: 16px;
   }
   .s-datetime svg { color: var(--accent-2); flex: 0 0 auto; }
@@ -132,7 +132,7 @@
   .s-refresh-row { width: 100%; display: flex; justify-content: flex-end; margin-bottom: -4px; }
   .s-refresh-btn {
     display: inline-flex; align-items: center; gap: 6px;
-    height: 28px; padding: 0 10px; border-radius: 8px;
+    height: 28px; padding: 0 10px; border-radius: 6px;
     background: transparent; border: 1px solid transparent;
     color: var(--muted); font-family: inherit; font-size: 12.5px; font-weight: 500;
     cursor: pointer; transition: color 0.15s, border-color 0.15s, background 0.15s;
@@ -147,7 +147,7 @@
   .s-tut-stage {
     width: 100%; height: 210px;
     margin-top: 14px;
-    background: var(--bg); border: 1px solid var(--line-soft); border-radius: 12px;
+    background: var(--bg); border: 1px solid var(--line-soft); border-radius: 8px;
     overflow: hidden;
     animation: s-fadeup-anim 0.25s ease-out;
   }
@@ -158,6 +158,8 @@
   }
   .s-tut-caption b { font-size: 16px; font-weight: 600; color: var(--text); }
   .s-tut-caption span { font-size: 14px; color: var(--muted); line-height: 1.45; }
+  .s-tut-caption--lines { gap: 10px; }
+  .s-tut-caption--lines p { margin: 0; font-size: 14.5px; color: var(--text-2); line-height: 1.5; }
   .s-tut-foot {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     margin-top: 18px;
@@ -207,20 +209,20 @@
     height: 100%;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
     color: var(--dim);
-    border: 2px dashed var(--line); border-radius: 12px; margin: 10px;
+    border: 2px dashed var(--line); border-radius: 8px; margin: 10px;
   }
   .s-tut-ph b { color: var(--muted); font-size: 14px; }
   .s-tut-ph span { font-size: 12px; }
   .s-tut-ph code {
     font-family: ui-monospace, Menlo, monospace; font-size: 12px;
     color: var(--accent-2); background: var(--card); border: 1px solid var(--line);
-    padding: 3px 8px; border-radius: 6px;
+    padding: 3px 8px; border-radius: 4px;
   }
 
   /* Guided QA cards on the test-photo review */
   .s-qa { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
   .s-qa-card {
-    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
     padding: 14px 16px;
     transition: opacity 0.2s, border-color 0.2s;
   }
@@ -230,7 +232,7 @@
   .s-qa-head { display: flex; align-items: flex-start; gap: 12px; text-align: left; }
   .s-qa-mark {
     flex: 0 0 auto;
-    width: 26px; height: 26px; border-radius: 8px;
+    width: 26px; height: 26px; border-radius: 6px;
     display: grid; place-items: center;
     background: var(--card-2); border: 1px solid var(--line);
     color: var(--muted); font-size: 13px; font-weight: 600;
@@ -247,7 +249,7 @@
   /* neutral until the operator commits — green only as hover feedback */
   .s-qa-yes:hover { background: var(--pass-soft); border-color: var(--pass-line); color: var(--pass); }
   .s-qa-actions .s-btn:not(.s-qa-yes):hover { background: var(--card); color: var(--text); }
-  .s-hero-ic--sm { width: 84px; height: 84px; border-radius: 20px; margin-bottom: 0; }
+  .s-hero-ic--sm { width: 84px; height: 84px; border-radius: 13px; margin-bottom: 0; }
 
   /* Found / Fixed summary cards on the applied screen — side-by-side columns */
   .s-summary-grid {
@@ -260,7 +262,7 @@
     width: 100%;
     display: flex; flex-direction: column;
     padding: 4px 18px 12px;
-    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 9px;
   }
   .s-summary-head {
     padding: 12px 0 10px;
@@ -278,7 +280,7 @@
   .s-summary-row + .s-summary-row { border-top: 1px solid var(--line-soft); }
   .s-fix-ic {
     flex: 0 0 auto;
-    width: 26px; height: 26px; border-radius: 8px;
+    width: 26px; height: 26px; border-radius: 6px;
     display: grid; place-items: center;
     background: var(--pass-soft); border: 1px solid var(--pass-line); color: var(--pass);
   }
@@ -294,14 +296,14 @@
 
   .s-qa-change {
     margin-left: auto; flex: 0 0 auto; align-self: center;
-    height: 30px; padding: 0 12px; border-radius: 8px;
+    height: 30px; padding: 0 12px; border-radius: 6px;
     background: transparent; border: 1px solid var(--line);
     color: var(--muted); font-family: inherit; font-size: 12.5px; font-weight: 500;
     cursor: pointer; transition: color 0.15s, border-color 0.15s;
   }
   .s-qa-change:hover { color: var(--text); border-color: var(--dim); }
   .s-qa-help {
-    margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+    margin-top: 12px; padding: 12px 14px; border-radius: 7px;
     background: var(--warn-soft); border: 1px solid rgba(234, 179, 8, 0.35);
     color: var(--text-2); font-size: 13.5px; line-height: 1.45; text-align: left;
   }
@@ -323,7 +325,7 @@
     position: absolute;
     border: 2px solid #5eead4;
     background: rgba(94, 234, 212, 0.14);
-    border-radius: 4px;
+    border-radius: 3px;
     box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.35);
     pointer-events: none;
   }
@@ -347,10 +349,12 @@
     position: relative;
     background: var(--card);
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 13px;
     padding: 30px 32px 26px;
-    width: min(760px, 100%);
-    max-height: 84%;
+    width: min(1040px, 92%);
+    aspect-ratio: 16 / 10;
+    max-height: 800px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
@@ -359,7 +363,37 @@
     font-size: 24px; font-weight: 600; letter-spacing: -0.02em;
     margin: 0 0 18px;
   }
+  .s-settings-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    gap: 24px;
+  }
+  .s-settings-nav {
+    flex: 0 0 176px;
+    display: flex; flex-direction: column; gap: 2px;
+    border-right: 1px solid var(--line-soft);
+    padding-right: 16px;
+    overflow-y: auto;
+  }
+  .s-settings-nav-item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    padding: 10px 12px; border-radius: 7px;
+    background: transparent; border: 1px solid transparent;
+    color: var(--text-2); font-family: inherit; font-size: 14.5px; font-weight: 500;
+    cursor: pointer; transition: background 0.15s, color 0.15s;
+  }
+  .s-settings-nav-item svg { flex: 0 0 auto; color: var(--dim); transition: color 0.15s; }
+  .s-settings-nav-item:hover { background: var(--card-2); color: var(--text); }
+  .s-settings-nav-item--on {
+    background: var(--accent-soft); color: var(--text); font-weight: 600;
+    border-color: rgba(234, 88, 12, 0.35);
+  }
+  .s-settings-nav-item--on svg { color: var(--accent-2); }
   .s-settings-body {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow-y: auto;
     padding-right: 8px;
     margin-right: -8px;
@@ -380,11 +414,91 @@
   .s-settings-overlay-preview {
     position: relative;
     width: 200px; height: 260px;
-    border-radius: 12px; overflow: hidden;
+    border-radius: 8px; overflow: hidden;
     background: var(--bg-soft); border: 1px solid var(--line);
   }
   .s-settings-overlay-controls { display: flex; flex-direction: column; gap: 14px; }
   .s-settings-overlay-controls input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+  /* Set Checklist screen only: less vertical space between title/lede/grid
+     than the shared .s-screen default, so 2 rows of cards fit without scroll. */
+  .s-screen--tight { gap: 12px; }
+
+  /* ===== Set Checklist: 3-column grid of taller cards with bullets
+     inline on the card itself, not just in the "More info" panel ===== */
+  .s-grid--checklist { grid-template-columns: repeat(3, 1fr); }
+  .s-card--checklist { padding: 16px 18px 50px; align-items: stretch; }
+  .s-card-head { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .s-card-head .s-card-ic { flex: 0 0 auto; width: 44px; height: 44px; }
+  .s-card-head .s-card-label { flex: 1 1 auto; padding-right: 24px; font-size: 16px; }
+  .s-card-bullets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .s-card-bullets li {
+    position: relative; padding-left: 16px;
+    font-size: 13.5px; color: var(--muted); line-height: 1.35; text-align: left;
+  }
+  .s-card-bullets li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--dim);
+  }
+  /* Fixed bottom-left, same spot on every card regardless of bullet count
+     (previously followed the bullets, so shorter cards read inconsistently). */
+  .s-card--checklist .s-card-info { position: absolute; left: 18px; right: auto; bottom: 14px; }
+
+  /* Settings screen: Need Help contacts editor -- one divider per entry */
+  .s-help-edit-row {
+    padding-bottom: 14px; margin-bottom: 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .s-help-edit-row:last-of-type { border-bottom: none; margin-bottom: 10px; padding-bottom: 0; }
+  /* Compact fields — the default .s-input/.s-field sizing (56px tall, 8px
+     label gap) is tuned for single hero inputs elsewhere; a repeating list
+     of small contact-card fields reads as cluttered at that size. */
+  .s-help-edit-row .s-form-row { gap: 10px; }
+  .s-help-edit-row .s-field { gap: 4px; }
+  .s-help-edit-row .s-field label { font-size: 11.5px; }
+  .s-help-edit-row .s-input { height: 38px; padding: 0 12px; font-size: 14px; }
+  .s-btn--sm {
+    height: 34px; padding: 0 14px;
+    font-size: 13px; border-radius: 6px;
+  }
+
+  /* Welcome screen's "what you'll need" list — one box, thin row dividers,
+     rather than a separate card per item (reads as cluttered at only 4 items). */
+  .s-needs-box {
+    width: 100%;
+    background: var(--card-soft);
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    padding: 2px 16px;
+  }
+  .s-needs-box ul { list-style: none; margin: 0; padding: 0; }
+  .s-needs-box li {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 0;
+    text-align: left;
+  }
+  .s-needs-box li:not(:last-child) { border-bottom: 1px solid var(--line-soft); }
+  .s-needs-box li b { display: block; font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.005em; }
+  .s-needs-box li span { font-size: 14px; color: var(--muted); line-height: 1.4; }
+  /* Plain solid bullet here, not the bordered circle used for actual
+     checkboxes elsewhere — this list is reference info, not tappable. */
+  .s-needs-box .s-checklist-dot {
+    width: 6px; height: 6px;
+    margin-top: 8px;
+    border: none;
+    background: var(--dim);
+    flex: 0 0 auto;
+  }
+
+  /* Welcome footer: location + live clock, moved out of the main content
+     area to keep that area focused on just the needs list. */
+  .s-welcome-foot-info {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    color: var(--muted); font-size: 15px;
+  }
+  .s-welcome-foot-info svg { vertical-align: -2px; margin-right: 2px; color: var(--accent-2); }
+  .s-welcome-foot-info b { color: var(--text); font-weight: 600; }
+  .s-welcome-foot-sep { width: 1px; height: 16px; background: var(--line); }
 </style>
 
 <script>
