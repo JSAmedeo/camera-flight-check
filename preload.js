@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld("cfc", {
     hostname: () => ipcRenderer.invoke("settings:hostname"),
     pickFolder: () => ipcRenderer.invoke("settings:pickFolder"),
     pickImage: () => ipcRenderer.invoke("settings:pickImage"),
+    pickDocFile: () => ipcRenderer.invoke("settings:pickDocFile"),
+  },
+  help: {
+    openDoc: (doc) => ipcRenderer.invoke("help:openDoc", doc),
   },
   camera: {
     mode: () => ipcRenderer.invoke("camera:mode"),
@@ -22,5 +26,6 @@ contextBridge.exposeInMainWorld("cfc", {
     capture: () => ipcRenderer.invoke("camera:capture"),
     set: (props) => ipcRenderer.invoke("camera:set", props),
     release: () => ipcRenderer.invoke("camera:release"),
+    releaseForHandoff: () => ipcRenderer.invoke("camera:releaseForHandoff"),
   },
 });

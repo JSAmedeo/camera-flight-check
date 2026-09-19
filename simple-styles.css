@@ -2,43 +2,101 @@
    Friendly, calm, one-task-per-screen. */
 
 :root {
-  /* Softened 2026-08-19 per field feedback ("too dark") — lifted the floor,
-     warmed the blue-heavy neutrals slightly, and eased the bg→text contrast
-     a touch. Still dark-first (kiosk/photo-booth feel), just less harsh. */
-  --bg: #171b24;
-  --bg-chrome: #242a38;
-  --bg-body: #454b60;
-  --bg-soft: #1d222d;
-  --card: #272e40;
-  --card-2: #2f3749;
-  --card-soft: #222836;
-  --line: #3a4359;
-  --line-soft: #2f3749;
+  /* Colorway refined 2026-09-03 — see DESIGN-SNAPSHOT.md for the prior
+     values. Four semantic concepts drive the whole palette: orange = current
+     workflow step/attention, green = forward action & success, amber =
+     warning, red = failure. Structure stays dark neutral charcoal/slate.
+     Token NAMES below predate this pass and are already purpose-based, not
+     literal ("--accent" not "--orange"); this pass only changed values and
+     added the RGB-triplet + pressed-state tokens noted inline. Mapping to
+     the requested naming scheme, for reference: --bg-chrome=chrome-bg,
+     --bg-body=app-bg, --card=surface, --card-2=surface-raised, --line=border,
+     --line-soft=border-subtle, --text/-2/muted/dim=text-primary/secondary/
+     muted/disabled, --accent(-2)=workflow-active(-hover), --btn-primary(-hover/
+     -pressed)=action-primary(-hover/-pressed), --pass=status-success,
+     --warn=status-warning, --fail=status-danger. */
+  --bg: #202634;
+  --bg-chrome: #202634;
+  --bg-body: #343945;
+  --bg-soft: #202634;
+  --card: #252c3b;
+  --card-2: #293140;
+  --card-soft: #202634;
+  --line: #3b4557;
+  --line-soft: #343d4d;
 
-  --text: #f0f2f7;
-  --text-2: #c2c9d6;
-  --muted: #8d97aa;
-  --dim: #5d6679;
+  --text: #f3f5f8;
+  --text-2: #b3bac7;
+  --muted: #858fa0;
+  --dim: #646d7c;
 
-  --accent: #ea580c;
-  --accent-2: #f97316;
-  --accent-soft: rgba(234, 88, 12, 0.16);
+  /* Orange — current workflow step / active attention. Kept visually
+     special: scoped to the current-step indicator, active question/card,
+     brand mark, and a couple of "in-progress" affordances — not spread
+     across every interactive element (see focus rings below, which are
+     intentionally neutral, not orange). */
+  --accent: #f36b21;
+  --accent-2: #ff7a2f;
+  --accent-rgb: 243, 107, 33;
+  --accent-2-rgb: 255, 122, 47;
+  --accent-soft: rgba(var(--accent-rgb), 0.12);
 
-  --btn-primary: #15803d;
-  --btn-primary-hover: #16a34a;
+  /* Green — forward-action buttons (Start/Continue/Take Photo/Looks Good).
+     Deliberately a separate token from --pass (status-success) below, even
+     though both currently resolve to the same green — this keeps button
+     color and "this passed" color independently changeable later. */
+  --btn-primary: #18a957;
+  --btn-primary-hover: #1db963;
+  --btn-primary-pressed: #128044;
+  --btn-primary-rgb: 24, 169, 87;
 
-  --pass: #22c55e;
-  --pass-soft: rgba(34, 197, 94, 0.16);
-  --pass-line: rgba(34, 197, 94, 0.4);
-  --warn: #eab308;
-  --warn-soft: rgba(234, 179, 8, 0.14);
-  --fail: #dc2626;
-  --fail-soft: rgba(220, 38, 38, 0.14);
+  /* Green — status/success (completed steps, passed checks, found-camera
+     rows). Same value as --btn-primary today, separate token on purpose. */
+  --pass: #18a957;
+  --pass-rgb: 24, 169, 87;
+  --pass-soft: rgba(var(--pass-rgb), 0.10);
+  --pass-line: rgba(var(--pass-rgb), 0.4);
+
+  /* Amber — warning / needs attention. Distinct from orange: orange means
+     "this is the current step," amber means "something needs a look." */
+  --warn: #dfaf18;
+  --warn-hover: #f0c239;
+  --warn-pressed: #b8890f;
+  --warn-rgb: 223, 175, 24;
+  --warn-soft: rgba(var(--warn-rgb), 0.10);
+
+  /* Red — true failure/blocked states only, never a plain "No" answer. */
+  --fail: #df4e4e;
+  --fail-rgb: 223, 78, 78;
+  --fail-soft: rgba(var(--fail-rgb), 0.10);
 
   --ui: "Geist", "Söhne", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+  /* Control-shape system (2026-09-03 refinement pass) — centralizes what
+     were previously ~30 scattered one-off border-radius values into a
+     small hierarchy: compact controls (chips, small icon buttons, inline
+     panels) < standard buttons/inputs < cards < modals. True status badges
+     (photo pill, sim badge) are the only things that stay full pill. */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-pill: 999px;
 }
 
 * { box-sizing: border-box; }
+
+/* Neutral keyboard-focus ring for every custom control, all of which are
+   plain <button>s with no focus styling of their own — without this they
+   fall back to the browser/OS default focus-ring color, which is NOT
+   guaranteed to be neutral (on some Windows accent-color settings it
+   renders orange, which reads as "current workflow step" rather than
+   "this button has keyboard focus"). Element-selector specificity is low on
+   purpose so any component-specific :focus-visible rule can still override it. */
+button:focus-visible {
+  outline: 2px solid var(--text-2);
+  outline-offset: 2px;
+}
 
 .s-app {
   position: absolute;
@@ -72,11 +130,11 @@
 }
 .s-top-mark {
   width: 40px; height: 40px;
-  border-radius: 7px;
-  background: linear-gradient(135deg, #ea580c, #f97316);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   display: grid; place-items: center;
   color: white;
-  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35);
 }
 .s-top-title {
   font-size: 16px;
@@ -103,7 +161,7 @@
   padding: 0 16px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   color: var(--text);
   font-family: inherit;
   font-size: 15px;
@@ -212,29 +270,36 @@
 .s-lede--left { text-align: left; max-width: none; }
 
 /* ==================== Footer ==================== */
+/* Three true columns (not flex space-between) so the center slot stays
+   centered on the footer as a whole regardless of what's in the side slots —
+   e.g. Welcome's location/clock text on the left with nothing on the right. */
 .s-foot {
   flex: 0 0 110px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   padding: 0 40px;
   background: var(--bg-chrome);
   border-top: 1px solid var(--line-soft);
 }
 
-.s-foot-status {
+.s-foot-left {
+  justify-self: start;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 15px;
   color: var(--muted);
 }
+.s-foot-center { justify-self: center; }
+.s-foot-right { justify-self: end; }
 
 /* ==================== Big buttons ==================== */
 .s-btn {
   height: 64px;
   padding: 0 32px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--line);
   background: var(--card);
   color: var(--text);
@@ -256,20 +321,63 @@
   background: var(--btn-primary);
   border-color: var(--btn-primary);
   color: white;
-  box-shadow: 0 8px 24px -8px rgba(21, 128, 61, 0.55),
+  box-shadow: 0 8px 24px -8px rgba(var(--btn-primary-rgb), 0.55),
               inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .s-btn--primary:hover { background: var(--btn-primary-hover); border-color: var(--btn-primary-hover); }
+.s-btn--primary:active {
+  background: var(--btn-primary-pressed);
+  border-color: var(--btn-primary-pressed);
+  box-shadow: none;
+}
+/* Retake-family actions (Retake photo / Redo grey card / Take it again) —
+   amber, not the neutral ghost style, so they read as "this needs another
+   pass" rather than a plain secondary action. Same size/shape family as
+   .s-btn--primary, deliberately different color so the two are never
+   confused at a glance when they sit side by side. */
+.s-btn--warn {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: #1a1400;
+  box-shadow: 0 8px 24px -8px rgba(var(--warn-rgb), 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.s-btn--warn:hover { background: var(--warn-hover); border-color: var(--warn-hover); }
+.s-btn--warn:active {
+  background: var(--warn-pressed);
+  border-color: var(--warn-pressed);
+  box-shadow: none;
+}
 .s-btn--ghost {
   background: transparent;
   border-color: var(--line);
   color: var(--text-2);
 }
+/* Destructive action (Remove) -- a red tint layered on top of .s-btn--ghost
+   so it still reads as a secondary action, just one that deletes something. */
+.s-btn--danger {
+  color: var(--fail);
+  border-color: rgba(var(--fail-rgb), 0.35);
+  background: rgba(var(--fail-rgb), 0.08);
+}
+.s-btn--danger:hover {
+  background: rgba(var(--fail-rgb), 0.16);
+  border-color: rgba(var(--fail-rgb), 0.5);
+}
+/* Fixed width (not just padding) so every xl button — Start, Continue, Take
+   Photo, Looks Good, Finish and Open RPS, the retake-family buttons, paired
+   or alone — is the same size everywhere. Longer labels (Redo grey card
+   calibration) wrap to a second line within that same width rather than
+   stretching the button wider. */
 .s-btn--xl {
   height: 76px;
-  padding: 0 44px;
-  font-size: 22px;
-  border-radius: 9px;
+  width: 260px;
+  padding: 0 16px;
+  font-size: 20px;
+  line-height: 1.15;
+  white-space: normal;
+  text-align: center;
+  border-radius: var(--radius-lg);
 }
 .s-btn--back {
   height: 52px;
@@ -285,28 +393,41 @@
   opacity: 0.42;
   cursor: not-allowed;
 }
+/* Disabled primary buttons must read as inactive, not a dimmed active green
+   button — neutral surface + muted text instead of relying on opacity.
+   Placed after the generic rule above so it wins on equal specificity. */
+.s-btn--primary:disabled,
+.s-btn--primary[disabled],
+.s-btn--warn:disabled,
+.s-btn--warn[disabled] {
+  background: var(--card-2);
+  border-color: var(--line);
+  color: var(--dim);
+  box-shadow: none;
+  opacity: 1;
+}
 
 /* ==================== Hero icon ==================== */
 .s-hero-ic {
   width: 132px; height: 132px;
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   display: grid; place-items: center;
   position: relative;
   margin-bottom: 4px;
 }
 .s-hero-ic--accent {
-  background: linear-gradient(150deg, rgba(234, 88, 12, 0.22), rgba(249, 115, 22, 0.08));
-  border: 1px solid rgba(234, 88, 12, 0.45);
+  background: linear-gradient(150deg, rgba(var(--accent-rgb), 0.22), rgba(var(--accent-2-rgb), 0.08));
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
   color: var(--accent-2);
 }
 .s-hero-ic--pass {
-  background: linear-gradient(150deg, rgba(34, 197, 94, 0.28), rgba(34, 197, 94, 0.08));
+  background: linear-gradient(150deg, rgba(var(--pass-rgb), 0.28), rgba(var(--pass-rgb), 0.08));
   border: 1px solid var(--pass-line);
   color: var(--pass);
 }
 .s-hero-ic--fail {
-  background: linear-gradient(150deg, rgba(220, 38, 38, 0.28), rgba(220, 38, 38, 0.06));
-  border: 1px solid rgba(220, 38, 38, 0.45);
+  background: linear-gradient(150deg, rgba(var(--fail-rgb), 0.28), rgba(var(--fail-rgb), 0.06));
+  border: 1px solid rgba(var(--fail-rgb), 0.45);
   color: var(--fail);
 }
 
@@ -321,7 +442,7 @@
 .s-card {
   background: var(--card);
   border: 2px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   padding: 22px 20px 54px;
   display: flex;
   flex-direction: column;
@@ -334,13 +455,16 @@
 .s-card:hover { background: var(--card-2); }
 .s-card:active { transform: translateY(1px); }
 
+/* Completed: mostly-neutral card with a subtle green border + tint — the
+   check circle and icon accent (below) carry the "this passed" signal, so
+   the card itself doesn't need to turn into a green panel. */
 .s-card--on {
-  background: rgba(34, 197, 94, 0.07);
-  border-color: var(--pass);
+  background: rgba(var(--pass-rgb), 0.035);
+  border-color: var(--pass-line);
 }
 .s-card-ic {
   width: 56px; height: 56px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: var(--card-soft);
   display: grid; place-items: center;
   color: var(--text-2);
@@ -356,7 +480,7 @@
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.01em;
-  color: #fff;
+  color: var(--text);
 }
 .s-card-sub {
   font-size: 14px;
@@ -388,7 +512,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--card-soft);
   border: 1px solid var(--line);
   color: var(--text-2);
@@ -401,19 +525,20 @@
   user-select: none;
 }
 .s-card-info:hover {
-  background: var(--bg-soft);
-  border-color: var(--accent);
-  color: var(--accent-2);
+  /* Neutral — More Info is a secondary action, not a workflow-state signal,
+     even on hover. */
+  background: var(--card-2);
+  border-color: var(--line);
+  color: var(--text);
 }
 .s-card-info:focus-visible {
-  outline: 2px solid var(--accent-2);
+  /* Neutral, not orange — a "current workflow step" color here would read
+     as workflow state rather than plain keyboard focus. */
+  outline: 2px solid var(--text-2);
   outline-offset: 2px;
 }
-.s-card--on .s-card-info {
-  background: rgba(34, 197, 94, 0.10);
-  border-color: var(--pass-line);
-  color: var(--pass);
-}
+/* More Info intentionally stays neutral even once the card is complete —
+   it's a secondary action, not a status indicator. */
 
 /* ==================== More-info popup ==================== */
 .s-info {
@@ -435,7 +560,7 @@
   position: relative;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 13px;
+  border-radius: var(--radius-xl);
   padding: 30px 32px 26px;
   width: min(560px, 100%);
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
@@ -446,7 +571,7 @@
   right: 14px;
   width: 36px;
   height: 36px;
-  border-radius: 7px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--line);
   background: var(--card-soft);
   color: var(--text-2);
@@ -467,9 +592,9 @@
   width: 60px;
   height: 60px;
   flex: 0 0 auto;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: var(--accent-soft);
-  border: 1px solid rgba(234, 88, 12, 0.4);
+  border: 1px solid rgba(var(--accent-rgb), 0.4);
   color: var(--accent-2);
   display: grid;
   place-items: center;
@@ -548,12 +673,12 @@
   padding: 18px 22px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--radius-md);
 }
 .s-row + .s-row { margin-top: 10px; }
 .s-row-ic {
   width: 44px; height: 44px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   background: var(--pass-soft);
   color: var(--pass);
   display: grid; place-items: center;
@@ -563,7 +688,7 @@
 .s-row-ic--working {
   background: var(--accent-soft);
   color: var(--accent-2);
-  border-color: rgba(234, 88, 12, 0.4);
+  border-color: rgba(var(--accent-rgb), 0.4);
 }
 .s-row-label {
   font-size: 17px;
@@ -589,7 +714,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: #050709;
   border: 2px solid var(--line);
@@ -600,7 +725,7 @@
   left: 14px;
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 6px 14px;
   font-size: 13px;
   color: white;
@@ -615,7 +740,7 @@
   box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.32);
 }
 .s-photo-pill--taken {
-  background: rgb(22, 101, 52);
+  background: var(--btn-primary-pressed);
   border-color: var(--pass-line);
   color: white;
   font-weight: 600;
@@ -660,6 +785,12 @@
   gap: 32px;
   align-items: stretch;
 }
+/* Test Photo step only — photo on the right, content on the left, so the
+   two-column camera screens read as visually distinct from the Camera step
+   (which stays photo-left) rather than identical layouts back to back. */
+.s-stage--reverse { grid-template-columns: 1fr auto; }
+.s-stage--reverse .s-stage-photo-col { order: 2; }
+.s-stage--reverse .s-stage-side { order: 1; }
 .s-photo--portrait {
   aspect-ratio: 1023 / 1537;
   height: 560px;
@@ -730,7 +861,7 @@
 .s-checklist--grouped {
   gap: 0;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--card-soft);
 }
@@ -762,7 +893,7 @@
   flex-direction: column;
   margin-top: 4px;
   border: 1px solid var(--line-soft);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
 }
 .s-stage-tips .s-tip { padding: 12px 16px; }
@@ -774,8 +905,8 @@
   gap: 12px;
   padding: 14px 16px;
   background: var(--accent-soft);
-  border: 1px solid rgba(234, 88, 12, 0.45);
-  border-radius: 8px;
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  border-radius: var(--radius-sm);
   color: var(--text);
   font-size: 15px;
   font-weight: 500;
@@ -815,9 +946,18 @@
   position: relative;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-xl);
   padding: 28px 30px;
-  width: min(520px, 100%);
+  width: min(720px, 96%);
+  display: flex;
+  flex-direction: column;
+  /* Grows with content (Documentation/Contacts columns) up to max-height --
+     the 900px-tall app stage minus the backdrop's 40px padding on each
+     side, with a little extra margin. Below max-height the card just
+     shrinks to fit its content down to min-height; above it, .s-help-col-list
+     below takes over scrolling so the header and column titles stay put. */
+  min-height: 460px;
+  max-height: 780px;
 }
 .s-help-card h3 {
   font-size: 22px;
@@ -825,35 +965,93 @@
   margin: 0 0 6px;
   letter-spacing: -0.02em;
 }
-.s-help-card p {
-  margin: 0 0 18px;
-  color: var(--text-2);
-  font-size: 16px;
-  line-height: 1.55;
-}
-.s-help-contacts {
+.s-help-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin: 0 0 22px;
-  max-height: 320px;
+  gap: 6px;
+}
+.s-help-list li {
+  position: relative;
+  padding-left: 16px;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.s-help-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dim);
+}
+.s-help-hr {
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  margin: 16px 0;
+}
+/* Documentation (left) and Contacts (right) side by side. flex:1 lets this
+   area fill whatever room is left inside .s-help-card's min/max-height;
+   each column then scrolls independently past that via .s-help-col-list,
+   so the header and column titles above never scroll out of view. */
+.s-help-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 18px;
+}
+.s-help-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.s-help-col-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  flex: 0 0 auto;
+}
+.s-help-col-title--doc { color: var(--warn); }
+.s-help-col-title--contact { color: var(--btn-primary); }
+.s-help-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
   overflow-y: auto;
 }
 .s-help-contact {
   background: var(--card-soft);
   border: 1px solid var(--line-soft);
-  border-radius: 6px;
-  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
-.s-help-eyebrow {
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent-2);
+/* Contacts: title is the prominent line (a little larger, colored to match
+   the continue button), description is secondary and smaller -- previously
+   both used .s-help-name, which made the description read louder than the
+   role it was describing. */
+.s-help-contact-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--btn-primary);
+  letter-spacing: -0.01em;
+}
+.s-help-desc {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--text-2);
 }
 .s-help-name {
   font-size: 17px;
@@ -865,7 +1063,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
@@ -878,6 +1076,16 @@
   justify-content: flex-end;
   gap: 10px;
 }
+.s-help-doc {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.s-help-doc:hover { background: var(--card-2); border-color: var(--line); }
+.s-help-doc .s-help-name { display: flex; align-items: center; gap: 8px; }
+.s-help-doc .s-help-name svg { flex: 0 0 auto; color: var(--warn); }
 
 /* ==================== Misc ==================== */
 .s-hr {
@@ -932,7 +1140,7 @@
 @keyframes s-spin { to { transform: rotate(360deg); } }
 .s-spinner {
   width: 20px; height: 20px;
-  border: 2.5px solid rgba(234, 88, 12, 0.3);
+  border: 2.5px solid rgba(var(--accent-rgb), 0.3);
   border-top-color: var(--accent-2);
   border-radius: 50%;
   animation: s-spin 0.9s linear infinite;
@@ -980,7 +1188,7 @@
   flex: 0 0 auto;
   border-radius: 50%;
   background: var(--accent-soft);
-  border: 1px solid rgba(234, 88, 12, 0.45);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
   color: var(--accent-2);
   font-size: 14px;
   font-weight: 700;

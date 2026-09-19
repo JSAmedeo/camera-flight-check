@@ -1,12 +1,14 @@
 // Camera Flight Check — Electron main process.
 // Opens the check UI as a frameless-feeling kiosk-style desktop window.
 
-const { app, BrowserWindow, globalShortcut, screen, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, globalShortcut, screen, ipcMain, dialog, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { spawn } = require("child_process");
 const { createCamera } = require("./camera-bridge");
+
+const VIDEO_EXTS = [".mp4", ".mov", ".avi", ".wmv", ".mkv", ".m4v", ".webm"];
 
 // ---------------------------------------------------------------- settings
 // Admin-configurable app settings, persisted to settings.json in userData.
@@ -43,8 +45,23 @@ function parseLocationFromHostname(hostname, mallMap) {
 function defaultSettings() {
   return {
     location: { number: "", name: "", station: "Camera" },
-    dataDir: path.join("C:\\preflight-ops-check", "Logs"),
+    // Three separate on-disk destinations an admin can point wherever the
+    // station's file-server mapping expects: completion/session logs
+    // (already wired into runs:save below), test photos (folder is
+    // configurable now; the capture flow doesn't write files there yet --
+    // that's a separate follow-up), and camera-host diagnostics (wired into
+    // setupCamera's logFile below).
+    paths: {
+      completionLogs: path.join("C:\\preflight-ops-check", "Logs"),
+      testPhotos: path.join("C:\\preflight-ops-check", "Photos"),
+      diagnostics: path.join("C:\\preflight-ops-check", "Diagnostics"),
+    },
     skipReasonPrompt: true,
+    // Admin-editable so a district can use its own skip vocabulary instead
+    // of the shipped defaults. "Other" (however it's currently labeled)
+    // triggers the free-text box in SkipReasonModal by text match, not
+    // position, so reordering/renaming/removing it is safe.
+    skipReasons: ["Running late", "Equipment issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
     // Field-tuned so the bundled guide matches a well-framed reference photo
     // (head ~2/5 down the frame, feet in the lower portion just above the
@@ -53,13 +70,36 @@ function defaultSettings() {
     // DEFAULT_OVERLAY in simple-app-bundled.jsx, which the Reset button and
     // initial placeholder state must stay in sync with.
     overlay: { offsetXPct: 0, offsetYPct: 9, scalePct: 87, customImagePath: null },
+    // RPS launch is now one selectable exit command rather than an assumed
+    // step -- stations that don't run RPS can turn it off; ScreenDone reads
+    // this to skip the launch call and swap its button label.
+    rpsLaunchEnabled: true,
     rpsPath: "C:\\CentricsRPSClient\\bin\\CentricsRPSClient.exe",
+    rpsAppName: "RPS",
     // Seeded with the same contacts the app shipped with before this was
     // admin-editable, so Need Help never renders empty out of the box.
     helpContacts: [
       { title: "District Manager", description: "", phone: "(xxx) xxx-xxxx", email: "" },
       { title: "Technical Support", description: "", phone: "(855) 925-4546", email: "" },
     ],
+    // Seeded so the two docs every station needs (printer media loading,
+    // RPS setup/training) are available out of the box, same as the
+    // contacts above -- admins can rename, replace, or remove them.
+    helpDocs: [
+      { name: "Printer Loading Video", localFile: "C:\\Options\\DNP-DS620A_Media_Loading.mp4", externalUrl: "" },
+      { name: "System Setup & RPS Help / Training", localFile: "C:\\Options\\RPS Help and Training.html", externalUrl: "" },
+    ],
+    // Blank by default -- video docs open via the OS's own default handler
+    // (shell.openPath), which can prompt for an app to use if Windows has no
+    // association for the extension. Pointing this at a specific player exe
+    // (VLC, etc.) skips that resolution/prompt entirely; see VIDEO_EXTS below.
+    videoPlayerPath: "",
+    // Gates the admin Settings screen behind a password so seasonal staff
+    // don't wander into camera limits or the RPS path. On by default so a
+    // fresh install is locked out of the box; the default password is meant
+    // to be handed out with training materials, same as any other doc here.
+    settingsPasswordEnabled: true,
+    settingsPassword: "help123",
   };
 }
 
@@ -68,7 +108,7 @@ function defaultSettings() {
 function mergeSettings(saved, defaults) {
   defaults = defaults || defaultSettings();
   const merged = { ...defaults, ...saved };
-  for (const key of ["location", "cameraLimits", "overlay"]) {
+  for (const key of ["location", "cameraLimits", "overlay", "paths"]) {
     merged[key] = { ...defaults[key], ...(saved[key] || {}) };
   }
   return merged;
@@ -136,6 +176,43 @@ function setupSettings() {
     fs.copyFileSync(r.filePaths[0], dest);
     return dest;
   });
+  // Documentation files stay wherever the admin points (a shared drive, a
+  // local docs folder) rather than being copied into userData -- unlike the
+  // overlay image above, these are meant to keep referencing their real
+  // on-machine location, not become a private app-owned copy.
+  ipcMain.handle("settings:pickDocFile", async (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    const r = await dialog.showOpenDialog(win, { properties: ["openFile"] });
+    return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
+  });
+
+  // Opens a Help Config documentation entry -- a local file via the OS's
+  // default handler, or an external URL via the default browser.
+  ipcMain.handle("help:openDoc", async (_e, doc) => {
+    if (doc && doc.localFile) {
+      const ext = path.extname(doc.localFile).toLowerCase();
+      // Route videos through the admin-configured player (if any) so it opens
+      // deterministically -- shell.openPath() defers to Windows' own file
+      // association, which prompts for an app to use when the extension has
+      // none set, exactly what a kiosk operator shouldn't have to deal with.
+      if (VIDEO_EXTS.includes(ext) && settings.videoPlayerPath && fs.existsSync(settings.videoPlayerPath)) {
+        try {
+          const child = spawn(settings.videoPlayerPath, [doc.localFile], { detached: true, stdio: "ignore" });
+          child.unref();
+          return { ok: true };
+        } catch (e) {
+          return { ok: false, error: e.message };
+        }
+      }
+      const err = await shell.openPath(doc.localFile);
+      return { ok: !err, error: err || null };
+    }
+    if (doc && doc.externalUrl) {
+      await shell.openExternal(doc.externalUrl);
+      return { ok: true };
+    }
+    return { ok: false, error: "no-target" };
+  });
 
   // Launches RPS (the photo sales app) at the admin-configured path. Checked
   // with fs.existsSync first rather than relying on spawn's error event --
@@ -183,12 +260,18 @@ const forceSimulator = process.argv.includes("--simulate");
 let camera = null;
 
 function setupCamera() {
+  // Admin-configurable via Settings > File Output Paths > Diagnostics; falls
+  // back to userData if that folder can't be created. Bound once at helper
+  // spawn time -- changing it mid-session takes effect on the next launch,
+  // same as before this was configurable.
+  let diagDir = settings.paths.diagnostics;
+  try { fs.mkdirSync(diagDir, { recursive: true }); } catch { diagDir = app.getPath("userData"); }
   camera = createCamera({
     forceSimulator,
     appDir: __dirname,
     resourcesDir: process.resourcesPath,
     isPackaged: app.isPackaged,
-    logFile: path.join(app.getPath("userData"), "camera-host.log"),
+    logFile: path.join(diagDir, "camera-host.log"),
   });
   const captureDir = path.join(os.tmpdir(), "camera-flight-check");
   fs.mkdirSync(captureDir, { recursive: true });
@@ -204,7 +287,7 @@ function setupCamera() {
     // that will grow to include the test photo in a later phase.
     if (event.runId) {
       try {
-        const sessDir = path.join(settings.dataDir, "sessions");
+        const sessDir = path.join(settings.paths.completionLogs, "sessions");
         fs.mkdirSync(sessDir, { recursive: true });
         fs.appendFileSync(path.join(sessDir, `${event.runId}.jsonl`), JSON.stringify(record) + "\n");
       } catch (e) {
@@ -220,6 +303,7 @@ function setupCamera() {
   ipcMain.handle("camera:capture", () => camera.capture(captureDir));
   ipcMain.handle("camera:set", (_e, props) => camera.set(props));
   ipcMain.handle("camera:release", () => camera.release());
+  ipcMain.handle("camera:releaseForHandoff", () => camera.releaseForHandoff());
 }
 
 function createWindow() {
@@ -311,8 +395,26 @@ app.whenReady().then(() => {
   createWindow();
 });
 
-app.on("will-quit", () => {
+// Closing via the window's X icon skips ScreenDone's own release-before-RPS
+// flow, so this is the only thing standing between "operator just clicked X"
+// and the next app (RPS, EOS Utility, the next launch of this app) finding
+// the camera still busy. releaseForHandoff() waits for CameraHost.exe to
+// actually exit rather than firing a blind quit and racing ahead — same fix
+// as the Close Utility / Open RPS button, applied here too. will-quit fires
+// once more after the async work finishes; the guard lets that second pass
+// through instead of looping.
+// Electron silently no-ops a second app.quit() called after a will-quit
+// handler has preventDefault()'d the first one — it does NOT re-emit
+// will-quit or otherwise resume quitting, so the process just hangs forever.
+// app.exit() bypasses the event lifecycle entirely and actually terminates
+// the process, which is exactly what's needed once our own cleanup is done.
+let quitting = false;
+app.on("will-quit", (event) => {
   globalShortcut.unregisterAll();
-  if (camera) camera.quit(); // release the USB session so RPS can attach
+  if (camera && !quitting) {
+    event.preventDefault();
+    quitting = true;
+    camera.releaseForHandoff().catch(() => {}).finally(() => app.exit(0));
+  }
 });
 app.on("window-all-closed", () => app.quit());

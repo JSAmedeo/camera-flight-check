@@ -168,6 +168,34 @@ const SI = {
   <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="M3 7l9 6 9-6" />
+    </svg>,
+
+  file: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 3h7l4 4v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+      <path d="M14 3v4h4" />
+    </svg>,
+
+  link: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 16} height={p.size || 16} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 14a4 4 0 005.66 0l3-3a4 4 0 00-5.66-5.66l-1 1" />
+      <path d="M14 10a4 4 0 00-5.66 0l-3 3a4 4 0 005.66 5.66l1-1" />
+    </svg>,
+
+  chevronUp: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 14} height={p.size || 14} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 15l6-6 6 6" />
+    </svg>,
+
+  chevronDown: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 14} height={p.size || 14} fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9l6 6 6-6" />
+    </svg>,
+
+  lock: (p = {}) =>
+  <svg viewBox="0 0 24 24" width={p.size || 18} height={p.size || 18} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 018 0v4" />
     </svg>
 
 };
@@ -351,7 +379,6 @@ function SettingsStrip({ s }) {
       <span><b>{s.shutter || "—"}</b></span>
       <span>ISO <b>{s.iso || "—"}</b></span>
       <span>WB <b>{s.wb || "—"}</b></span>
-      {s.battery != null && <span>BAT <b>{s.battery}%</b></span>}
     </div>);
 
 }
@@ -408,12 +435,16 @@ function SimpleTop({ openHelp, openSettings, step }) {
 const STEP_LABELS = S.steps;
 
 function SimpleSteps({ step }) {
+  // On the Done screen itself there's nothing left "in progress" -- every
+  // step, including the last, reads as complete rather than showing the
+  // final dot as the current/active step.
+  const allDone = step >= STEP_LABELS.length;
   return (
     <div className="s-steps">
       {STEP_LABELS.map((label, i) => {
         const n = i + 1;
-        const isActive = n === step;
-        const isDone = n < step;
+        const isActive = !allDone && n === step;
+        const isDone = allDone || n < step;
         const showLabel = isActive;
         return (
           <React.Fragment key={label}>
@@ -439,12 +470,9 @@ function SimpleSteps({ step }) {
 function SimpleFoot({ left, back, skip, primary }) {
   return (
     <div className="s-foot">
-      <div className="s-foot-status">{left}</div>
-      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-        {back}
-        {skip}
-        {primary}
-      </div>
+      <div className="s-foot-left">{back || left}</div>
+      <div className="s-foot-center">{primary}</div>
+      <div className="s-foot-right">{skip}</div>
     </div>);
 
 }
@@ -459,10 +487,13 @@ function SkipButton({ onClick }) {
 
 }
 
-function SkipReasonModal({ screenLabel, onConfirm, onClose }) {
-  const [reason, setReason] = React.useState(S.skip.reasons[0]);
+function SkipReasonModal({ screenLabel, onConfirm, onClose, reasons }) {
+  const list = reasons && reasons.length ? reasons : ["Other"];
+  const [reason, setReason] = React.useState(list[0]);
   const [note, setNote] = React.useState("");
-  const isOther = reason === S.skip.reasons[S.skip.reasons.length - 1];
+  // Admin-editable reasons can be reordered/renamed, so "show a free-text
+  // box" keys off the text itself rather than assuming "Other" is last.
+  const isOther = reason.trim().toLowerCase() === "other";
 
   React.useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -472,7 +503,7 @@ function SkipReasonModal({ screenLabel, onConfirm, onClose }) {
 
   return (
     <div className="s-info" onClick={onClose}>
-      <div className="s-info-card s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div className="s-info-card s-skip-card s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <button className="s-info-close" onClick={onClose} aria-label="Close">
           <SI.close size={18} />
         </button>
@@ -482,20 +513,21 @@ function SkipReasonModal({ screenLabel, onConfirm, onClose }) {
             <h3 className="s-info-title">{S.skip.modalTitle}</h3>
           </div>
         </div>
-        <div className="s-qa-chips" style={{ marginTop: 4 }}>
-          {S.skip.reasons.map((r) =>
+        <div className="s-skip-reasons">
+          {list.map((r) =>
           <button
             key={r}
-            className={`s-qa-chip ${reason === r ? "s-qa-chip--on" : ""}`}
+            className={`s-skip-reason ${reason === r ? "s-skip-reason--on" : ""}`}
             onClick={() => setReason(r)}>
+              <span className="s-skip-reason-dot" />
               {r}
             </button>
           )}
         </div>
         {isOther &&
-        <input
-          className="s-input"
-          style={{ marginTop: 12 }}
+        <textarea
+          className="s-input s-skip-other"
+          rows={2}
           placeholder={S.skip.otherPlaceholder}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -535,7 +567,7 @@ function ScreenWelcome({ onStart, settings }) {
   S.app.locationUnknown;
   const needs = [
   { title: S.welcome.need1Title, text: S.welcome.need1Text },
-  { title: S.welcome.need2Title, text: S.welcome.need2Text },
+  { title: S.welcome.need2Title, lines: S.welcome.need2Lines },
   { title: S.welcome.need3Title, text: S.welcome.need3Text },
   { title: S.welcome.need4Title, text: S.welcome.need4Text }];
 
@@ -556,13 +588,20 @@ function ScreenWelcome({ onStart, settings }) {
                   {needs.map((n, i) =>
                   <li key={n.title}>
                       <span className="s-checklist-dot" />
-                      <div><b>{n.title}</b><span>{n.text}</span></div>
+                      <div>
+                        <b>{n.title}</b>
+                        {n.lines ?
+                        <ul className="s-need-sublist">
+                          {n.lines.map((line, li) => <li key={li}>{line}</li>)}
+                        </ul> :
+                        <span>{n.text}</span>}
+                      </div>
                       {i === 0 &&
                       <button
-                        className="s-refresh-btn"
+                        className="s-tip-btn"
                         style={{ marginLeft: "auto", alignSelf: "center" }}
                         onClick={() => setGreyCardHelp(true)}>
-                          <SI.help size={13} /> {S.camera.shoot.greyCardHelpButton}
+                          <SI.help size={14} /> {S.camera.shoot.greyCardHelpButton}
                         </button>
                       }
                     </li>
@@ -577,7 +616,6 @@ function ScreenWelcome({ onStart, settings }) {
         left={
         <span className="s-welcome-foot-info">
             <span><SI.pin size={14} /> {locationText} · <b>{loc.station || "Camera 1"}</b></span>
-            <span className="s-welcome-foot-sep" />
             <span>{dateText} · <b>{timeText}</b></span>
           </span>
         }
@@ -610,10 +648,16 @@ const WALK_ITEMS = Object.keys(WALK_ICONS).map((key) => {
 });
 
 function ScreenWalkAround({ checked, setChecked, onNext, onBack, onSkip }) {
-  const toggle = (k) => setChecked((c) => ({ ...c, [k]: !c[k] }));
-  const doneCount = Object.values(checked).filter(Boolean).length;
+  // A card's value is `true` (checked done), the sentinel "skipped" (not
+  // applicable at this station -- a router or webcam that isn't in use,
+  // say), or absent/false (untouched). Either resolved state satisfies the
+  // gate to Continue; clicking the card body always lands on "done"
+  // regardless of which state it started from.
+  const toggle = (k) => setChecked((c) => ({ ...c, [k]: c[k] === true ? false : true }));
+  const skipItem = (k) => setChecked((c) => ({ ...c, [k]: c[k] === "skipped" ? false : "skipped" }));
+  const resolvedCount = Object.values(checked).filter((v) => v === true || v === "skipped").length;
   const total = WALK_ITEMS.length;
-  const allDone = doneCount === total;
+  const allDone = resolvedCount === total;
   const [infoKey, setInfoKey] = React.useState(null);
   const infoItem = WALK_ITEMS.find((i) => i.key === infoKey);
 
@@ -625,53 +669,62 @@ function ScreenWalkAround({ checked, setChecked, onNext, onBack, onSkip }) {
           <p className="s-lede">{S.walk.lede}</p>
 
           <div className="s-grid s-grid--checklist" style={{ marginTop: 4 }}>
-            {WALK_ITEMS.map((it) =>
-            <button
-              key={it.key}
-              className={`s-card s-card--checklist ${checked[it.key] ? "s-card--on" : ""}`}
-              onClick={() => toggle(it.key)}>
+            {WALK_ITEMS.map((it) => {
+              const state = checked[it.key];
+              return (
+              <button
+                key={it.key}
+                className={`s-card s-card--checklist ${state === true ? "s-card--on" : ""} ${state === "skipped" ? "s-card--skipped" : ""}`}
+                onClick={() => toggle(it.key)}>
 
-                <div className="s-card-head">
-                  <div className="s-card-ic">{it.icon}</div>
-                  <div className="s-card-label">{it.label}</div>
-                  <span className="s-card-check">
-                    <SI.check size={16} />
-                  </span>
-                </div>
-                {it.bullets.length > 0 &&
-                <ul className="s-card-bullets">
-                  {it.bullets.map((b, i) => <li key={i}>{b}</li>)}
-                </ul>
-                }
-                <span
-                className="s-card-info"
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {e.stopPropagation();setInfoKey(it.key);}}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    setInfoKey(it.key);
+                  <div className="s-card-head">
+                    <div className="s-card-ic">{it.icon}</div>
+                    <div className="s-card-label">{it.label}</div>
+                    <span className="s-card-check">
+                      {state === "skipped" ? <SI.skip size={13} /> : <SI.check size={16} />}
+                    </span>
+                  </div>
+                  {it.bullets.length > 0 &&
+                  <ul className="s-card-bullets">
+                    {it.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                  </ul>
                   }
-                }}>
-                  <SI.info size={14} /> {S.common.moreInfo}
-                </span>
-              </button>
-            )}
+                  <span
+                  className="s-card-info"
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {e.stopPropagation();setInfoKey(it.key);}}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setInfoKey(it.key);
+                    }
+                  }}>
+                    <SI.info size={14} /> {S.common.moreInfo}
+                  </span>
+                  <span
+                  className={`s-card-skip ${state === "skipped" ? "s-card-skip--on" : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {e.stopPropagation();skipItem(it.key);}}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      skipItem(it.key);
+                    }
+                  }}>
+                    <SI.skip size={13} /> {state === "skipped" ? S.walk.itemSkipped : S.walk.itemNotApplicable}
+                  </span>
+                </button>);
+
+            })}
           </div>
         </div>
       </div>
       {infoItem && <WalkInfoModal item={infoItem} onClose={() => setInfoKey(null)} />}
       <SimpleFoot
-        left={
-        <span>
-            <b style={{ color: allDone ? "var(--pass)" : "var(--text)", fontSize: 17 }}>
-              {doneCount} {S.walk.tutorial.of} {total}
-            </b>
-            <span style={{ marginLeft: 8 }}>{S.walk.checkedOff}</span>
-          </span>
-        }
         back={<button className="s-btn s-btn--back" onClick={onBack}><SI.back /> {S.common.back}</button>}
         skip={<SkipButton onClick={onSkip} />}
         primary={
@@ -1002,25 +1055,25 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
                   {detected ? detected.model : S.app.title}
                 </div>
               </div>
-              <div className="s-stage-side">
+              <div className="s-stage-side" style={{ gap: 12 }}>
                 <h1 className="s-h1 s-h1--small s-h1--left">{S.camera.shoot.title}</h1>
                 <p className="s-lede s-lede--left">
-                  {S.camera.shoot.ledeBefore}<b style={{ color: "#a8b0c0" }}>{S.camera.shoot.ledeGreyCard}</b>{S.camera.shoot.ledeAfter}
+                  {S.camera.shoot.ledeBefore}<b style={{ color: "var(--text-2)" }}>{S.camera.shoot.ledeGreyCard}</b>{S.camera.shoot.ledeAfter}
                 </p>
-                <div className="s-stage-tips">
-                  <div className="s-tip">
-                    <span className="s-tip-num">1</span>
-                    {S.camera.shoot.tip1}
-                  </div>
-                  <div className="s-tip">
-                    <span className="s-tip-num">2</span>
-                    {S.camera.shoot.tip2}
-                  </div>
-                  <div className="s-tip">
-                    <span className="s-tip-num">3</span>
-                    {S.camera.shoot.tip3}
-                  </div>
-                </div>
+                <ul className="s-checklist s-checklist--grouped">
+                  <li>
+                    <span className="s-checklist-dot" />
+                    <div><b>{S.camera.shoot.tip1}</b></div>
+                  </li>
+                  <li>
+                    <span className="s-checklist-dot" />
+                    <div><b>{S.camera.shoot.tip2}</b></div>
+                  </li>
+                  <li>
+                    <span className="s-checklist-dot" />
+                    <div><b>{S.camera.shoot.tip3}</b></div>
+                  </li>
+                </ul>
                 <button className="s-refresh-btn" style={{ alignSelf: "flex-start" }} onClick={() => setGreyCardHelp(true)}>
                   <SI.help size={13} /> {S.camera.shoot.greyCardHelpButton}
                 </button>
@@ -1107,6 +1160,13 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
                       <span>{S.camera.select.check3Text}</span>
                     </div>
                   </li>
+                  <li>
+                    <span className="s-checklist-dot" />
+                    <div>
+                      <b>{S.camera.select.check4Title}</b>
+                      <span>{S.camera.select.check4Text}</span>
+                    </div>
+                  </li>
                 </ul>
                 }
                 {busy &&
@@ -1121,10 +1181,12 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
           </div>
         </div>
         <SimpleFoot
-          left={null}
-          back={<button className="s-btn s-btn--back" disabled={busy} onClick={() => setStage("shoot")}><SI.back /> {S.camera.select.retakePhoto}</button>}
           skip={<SkipButton onClick={onSkip} />}
-          primary={null} />
+          primary={
+          <button className="s-btn s-btn--warn s-btn--xl" disabled={busy} onClick={() => setStage("shoot")}>
+              <SI.retake size={16} /> {S.camera.select.retakePhoto}
+            </button>
+          } />
       </>);
   }
 
@@ -1248,13 +1310,15 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
         </div>
       </div>
       <SimpleFoot
-        left={null}
-        back={<button className="s-btn s-btn--back" onClick={() => setStage("shoot")}>{S.camera.applied.redoGreyCard}</button>}
-        skip={<SkipButton onClick={onSkip} />}
         primary={
-        <button className="s-btn s-btn--primary s-btn--xl" onClick={onNext}>
-            {S.common.continue} <SI.arrow size={20} />
-          </button>
+        <div style={{ display: "flex", gap: 16 }}>
+            <button className="s-btn s-btn--warn s-btn--xl" onClick={() => setStage("shoot")}>
+              <SI.retake size={16} /> {S.camera.applied.redoGreyCard}
+            </button>
+            <button className="s-btn s-btn--primary s-btn--xl" onClick={onNext}>
+              {S.common.continue} <SI.arrow size={20} />
+            </button>
+          </div>
         } />
     </>);
 }
@@ -1312,9 +1376,14 @@ function RegionSelect({ src, box, setBox, onDone, busy }) {
       const s = Math.min(p.r.width, p.r.height) * 0.08;
       b = { x: d.x0 - s / 2, y: d.y0 - s / 2, w: s, h: s };
     }
+    // The box now persists for an explicit confirm/discard (the check/X
+    // badges below) instead of advancing immediately -- onDone only fires
+    // once the operator taps the checkmark.
     setBox(b);
-    onDone(b, imgRef.current);
   };
+
+  const confirm = () => { if (box && !busy) onDone(box, imgRef.current); };
+  const discard = () => { if (!busy) setBox(null); };
 
   return (
     <div
@@ -1329,7 +1398,28 @@ function RegionSelect({ src, box, setBox, onDone, busy }) {
         draggable={false}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }} />
       {box &&
-      <div className="s-selbox" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />
+      <div className="s-selbox" style={{ left: box.x, top: box.y, width: box.w, height: box.h }}>
+        {!busy &&
+        <>
+          <button
+            type="button"
+            className="s-selbox-btn s-selbox-btn--confirm"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={confirm}
+            aria-label={S.camera.select.confirmBox}>
+            <SI.check size={14} />
+          </button>
+          <button
+            type="button"
+            className="s-selbox-btn s-selbox-btn--discard"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={discard}
+            aria-label={S.camera.select.discardBox}>
+            <SI.close size={14} />
+          </button>
+        </>
+        }
+      </div>
       }
       {!box && !busy &&
       <div className="s-photo-pill" style={{ background: "rgba(0,0,0,0.55)" }}>
@@ -1552,6 +1642,13 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
   const [centered, setCentered] = React.useState(null); // null | true | false
   const [crisp, setCrisp] = React.useState(null); // null | true | false
   const [colorSel, setColorSel] = React.useState([]); // ["yes"] or fix keys
+  // Counts failed attempts per question so "Skip and continue" only shows
+  // up once a retake has already failed to fix it once -- an escape hatch
+  // for a real hardware/lighting problem the operator can't self-resolve,
+  // so a single stubborn check doesn't strand them here indefinitely.
+  const [centeredFails, setCenteredFails] = React.useState(0);
+  const [crispFails, setCrispFails] = React.useState(0);
+  const [colorFails, setColorFails] = React.useState(0);
 
   React.useEffect(() => {
     if (cam) cam.settings().then(setCamSettings).catch(() => {});
@@ -1633,6 +1730,7 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
       } else {
         setAdjustNote(S.testPhoto.atLimitNote);
       }
+      setColorFails((n) => n + 1);
       setPendingKeep(2);
       setStage("aim");
     } catch (e) {
@@ -1646,7 +1744,7 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
       <>
         <div className="s-body">
           <div className="s-screen s-screen--wide s-screen--compact s-fadeup">
-            <div className="s-stage">
+            <div className="s-stage s-stage--reverse">
               <div className="s-stage-photo-col">
                 <div className="s-photo s-photo--portrait">
                   {photo ?
@@ -1749,7 +1847,7 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
     <>
       <div className="s-body">
         <div className="s-screen s-screen--wide s-screen--compact s-fadeup">
-          <div className="s-stage">
+          <div className="s-stage s-stage--reverse">
             <div className="s-stage-photo-col">
               <div className="s-photo s-photo--portrait">
                 <img
@@ -1789,7 +1887,12 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
                   <>
                     <div className="s-qa-actions">
                       <button className="s-btn s-qa-yes" onClick={() => setCentered(true)}>{S.common.yes}</button>
-                      <button className="s-btn" onClick={() => setCentered(false)}>{S.common.no}</button>
+                      <button className="s-btn" onClick={() => { setCentered(false); setCenteredFails((n) => n + 1); }}>{S.common.no}</button>
+                      {centeredFails > 0 &&
+                      <button className="s-btn s-qa-skip-continue" onClick={() => setCentered(true)}>
+                        <SI.skip size={14} /> {S.testPhoto.skipAndContinue}
+                      </button>
+                      }
                     </div>
                     {centered === false &&
                     <div className="s-qa-help">
@@ -1819,7 +1922,12 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
                   <>
                     <div className="s-qa-actions">
                       <button className="s-btn s-qa-yes" onClick={() => setCrisp(true)}>{S.common.yes}</button>
-                      <button className="s-btn" onClick={() => setCrisp(false)}>{S.common.no}</button>
+                      <button className="s-btn" onClick={() => { setCrisp(false); setCrispFails((n) => n + 1); }}>{S.common.no}</button>
+                      {crispFails > 0 &&
+                      <button className="s-btn s-qa-skip-continue" onClick={() => setCrisp(true)}>
+                        <SI.skip size={14} /> {S.testPhoto.skipAndContinue}
+                      </button>
+                      }
                     </div>
                     {crisp === false &&
                     <div className="s-qa-help">
@@ -1853,6 +1961,7 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
                       onClick={() => toggleColor("yes")}>
                         {S.testPhoto.colorYes}
                       </button>
+                      <span className="s-qa-divider" />
                       {COLOR_FIXES.map((f) =>
                     <button
                       key={f.key}
@@ -1870,6 +1979,14 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
                       </button>
                     </div>
                     }
+                    {colorFails > 0 &&
+                    <button
+                      className="s-btn s-qa-skip-continue"
+                      style={{ marginTop: 10 }}
+                      onClick={() => setColorSel(["yes"])}>
+                        <SI.skip size={14} /> {S.testPhoto.skipAndContinue}
+                      </button>
+                    }
                   </>
                   }
                 </div>
@@ -1881,15 +1998,16 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
         </div>
       </div>
       <SimpleFoot
-        left={<span><b style={{ color: colorsYes ? "var(--pass)" : "var(--text)" }}>
-          {(centered === true ? 1 : 0) + (crisp === true ? 1 : 0) + (colorsYes ? 1 : 0)} {S.testPhoto.checksOf} 3
-        </b><span style={{ marginLeft: 8 }}>{S.testPhoto.checksPassed}</span></span>}
-        back={<button className="s-btn s-btn--back" disabled={busy} onClick={() => takePhoto(0)}><SI.retake size={16} /> {S.testPhoto.takeItAgain}</button>}
         skip={<SkipButton onClick={onSkip} />}
         primary={
-        <button className="s-btn s-btn--primary s-btn--xl" disabled={!colorsYes || busy} onClick={onNext}>
-            <SI.check size={20} /> {S.testPhoto.looksGood}
-          </button>
+        <div style={{ display: "flex", gap: 16 }}>
+            <button className="s-btn s-btn--warn s-btn--xl" disabled={busy} onClick={() => takePhoto(0)}>
+              <SI.retake size={16} /> {S.camera.select.retakePhoto}
+            </button>
+            <button className="s-btn s-btn--primary s-btn--xl" disabled={!colorsYes || busy} onClick={onNext}>
+              <SI.check size={20} /> {S.testPhoto.looksGood}
+            </button>
+          </div>
         } />
     </>);
 }
@@ -1897,12 +2015,15 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
 // ============================================================
 // Screen 5 — Done
 // ============================================================
-function ScreenDone({ onRestart, run }) {
+function ScreenDone({ onRestart, run, settings }) {
   const durationSec = run ? Math.max(0, Math.round((Date.now() - new Date(run.startedAt).getTime()) / 1000)) : null;
-  const durationText = durationSec == null ? "—" :
-  durationSec >= 60 ? `${Math.floor(durationSec / 60)} ${S.done.minutes} ${durationSec % 60} ${S.done.seconds}` : `${durationSec} ${S.done.seconds}`;
   const [closing, setClosing] = React.useState(false);
   const [rpsError, setRpsError] = React.useState(false);
+  // The exit app is one selectable default now (Settings > General >
+  // App Defaults) -- stations that don't run one can turn it off, and can
+  // name it something other than RPS.
+  const rpsEnabled = !settings || settings.rpsLaunchEnabled !== false;
+  const exitAppName = (settings && settings.rpsAppName) || "RPS";
 
   const launch = async () => {
     if (closing) return;
@@ -1916,10 +2037,13 @@ function ScreenDone({ onRestart, run }) {
         durationSec
       }).catch(() => {});
     }
-    // free the USB session so RPS can attach to the camera, then try to open it
-    if (cam) { try { await cam.release(); } catch {} }
+    // Closing the session alone isn't reliable — the vendor SDK ties the USB
+    // claim to the CameraHost.exe process, not just the session, so RPS can
+    // still find the camera busy even after a successful release(). Wait for
+    // the helper process to actually exit before handing off to RPS.
+    if (cam) { try { await cam.releaseForHandoff(); } catch {} }
     let rpsOk = true;
-    if (window.cfc && window.cfc.launchRps) {
+    if (rpsEnabled && window.cfc && window.cfc.launchRps) {
       const r = await window.cfc.launchRps().catch(() => ({ ok: false }));
       rpsOk = !!(r && r.ok);
     }
@@ -1963,11 +2087,10 @@ function ScreenDone({ onRestart, run }) {
         </div>
       </div>
       <SimpleFoot
-        left={<span>{S.done.finishedIn} <b style={{ color: "var(--text)" }}>{durationText}</b></span>}
         back={<button className="s-btn s-btn--back" onClick={onRestart} disabled={closing}>{S.done.startOver}</button>}
         primary={
         <button className="s-btn s-btn--primary s-btn--xl" onClick={launch} disabled={closing}>
-            {closing ? <><div className="s-spinner" /> {S.done.closing}</> : <><SI.camera size={22} /> {S.done.closeAndOpenRps}</>}
+            {closing ? <><div className="s-spinner" /> {S.done.closing}</> : <><SI.camera size={22} /> {rpsEnabled ? fmt(S.done.closeAndOpenApp, { name: exitAppName }) : S.done.closeOnly}</>}
           </button>
         } />
 
@@ -1980,6 +2103,13 @@ function ScreenDone({ onRestart, run }) {
 // ============================================================
 function HelpModal({ onClose, settings }) {
   const contacts = settings.helpContacts || [];
+  const docs = settings.helpDocs || [];
+
+  const openDoc = async (doc) => {
+    if (!(window.cfc && window.cfc.help)) return;
+    try { await window.cfc.help.openDoc(doc); } catch {}
+  };
+
   return (
     <div className="s-help" onClick={onClose}>
       <div className="s-help-card" onClick={(e) => e.stopPropagation()}>
@@ -1987,28 +2117,46 @@ function HelpModal({ onClose, settings }) {
           <SI.close size={18} />
         </button>
         <h3>{S.help.title}</h3>
-        <p>
-          {S.help.bodyLine1}
-          <br />
-          {S.help.bodyLine2}
-        </p>
-        <div className="s-help-contacts">
-          {contacts.map((c, i) =>
-          <div className="s-help-contact" key={i}>
-              <div className="s-help-eyebrow">{c.title}</div>
-              {c.description && <div className="s-help-name">{c.description}</div>}
-              {c.phone &&
-            <div className="s-help-phone">
-                  <SI.phone size={16} /> {c.phone}
-                </div>
-            }
-              {c.email &&
-            <div className="s-help-phone">
-                  <SI.mail size={16} /> {c.email}
-                </div>
-            }
+        <ul className="s-help-list">
+          <li>{S.help.bodyLine0}</li>
+          <li>{S.help.bodyLine1}</li>
+          <li>{S.help.bodyLine2}</li>
+        </ul>
+        <hr className="s-help-hr" />
+        <div className="s-help-cols">
+          <div className="s-help-col">
+            <div className="s-help-col-title s-help-col-title--doc">{S.help.docsEyebrow}</div>
+            <div className="s-help-col-list">
+              {docs.map((d, i) =>
+              <button className="s-help-contact s-help-doc" key={"doc" + i} onClick={() => openDoc(d)}>
+                  <div className="s-help-name">
+                    {d.localFile ? <SI.file size={16} /> : <SI.link size={16} />} {d.name}
+                  </div>
+                </button>
+              )}
             </div>
-          )}
+          </div>
+          <div className="s-help-col">
+            <div className="s-help-col-title s-help-col-title--contact">{S.help.contactsTitle}</div>
+            <div className="s-help-col-list">
+              {contacts.map((c, i) =>
+              <div className="s-help-contact" key={i}>
+                  <div className="s-help-contact-title">{c.title}</div>
+                  {c.description && <div className="s-help-desc">{c.description}</div>}
+                  {c.phone &&
+                <div className="s-help-phone">
+                      <SI.phone size={16} /> {c.phone}
+                    </div>
+                }
+                  {c.email &&
+                <div className="s-help-phone">
+                      <SI.mail size={16} /> {c.email}
+                    </div>
+                }
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <div className="s-help-actions">
           <button className="s-btn s-btn--ghost" onClick={onClose}>{S.common.close}</button>
@@ -2028,18 +2176,27 @@ const WB_VOCAB_FALLBACK = Object.keys(WB_KELVIN).concat(["Auto", "Custom"]);
 // test-photo overlay editor. Edits a local draft; only written to disk
 // (via settings:save) and applied to the running app on "Save changes".
 // ============================================================
-function SettingsScreen({ settings, onSave, onClose }) {
+function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
   const T = S.settingsScreen;
   const [draft, setDraft] = React.useState(settings);
   const [saving, setSaving] = React.useState(false);
   const [camWb, setCamWb] = React.useState(null); // wbValues from a connected camera, if any
   const [activeGroup, setActiveGroup] = React.useState("general");
+  const [overlayPhoto, setOverlayPhoto] = React.useState(null); // real capture, shown under the guide for placement reference
+  const [overlayCapturing, setOverlayCapturing] = React.useState(false);
+  const [overlayCamError, setOverlayCamError] = React.useState(null);
+  const [showPassword, setShowPassword] = React.useState(false);
+  // Reveal-password stays available only while a password is being created
+  // for the first time -- once one is saved, changing it means typing a new
+  // one blind, same as any other password field. Read from the original
+  // `settings` prop (not the live draft) so toggling this doesn't shift
+  // under someone mid-edit.
+  const hasExistingPassword = !!settings.settingsPassword;
 
   const groups = [
     { key: "general", label: T.groupGeneral, icon: <SI.pin size={16} /> },
     { key: "limits", label: T.groupLimits, icon: <SI.gear size={16} /> },
     { key: "overlay", label: T.groupOverlay, icon: <SI.framing size={16} /> },
-    { key: "rps", label: T.groupRps, icon: <SI.plug size={16} /> },
     { key: "help", label: T.groupHelp, icon: <SI.help size={16} /> }
   ];
 
@@ -2066,16 +2223,68 @@ function SettingsScreen({ settings, onSave, onClose }) {
 
   const numOrNull = (v) => v === "" ? null : Number(v);
 
-  const pickFolder = async () => {
+  const pickPath = async (key) => {
     if (!(window.cfc && window.cfc.settings)) return;
     const dir = await window.cfc.settings.pickFolder();
-    if (dir) setField("dataDir", null, dir);
+    if (dir) setField("paths", key, dir);
+  };
+
+  const updateReason = (i, value) => {
+    setDraft((d) => {
+      const reasons = [...(d.skipReasons || [])];
+      reasons[i] = value;
+      return { ...d, skipReasons: reasons };
+    });
+  };
+  const addReason = () => {
+    setDraft((d) => ({ ...d, skipReasons: [...(d.skipReasons || []), ""] }));
+  };
+  const removeReason = (i) => {
+    setDraft((d) => ({ ...d, skipReasons: (d.skipReasons || []).filter((_, idx) => idx !== i) }));
   };
 
   const pickImage = async () => {
     if (!(window.cfc && window.cfc.settings)) return;
     const p = await window.cfc.settings.pickImage();
     if (p) setField("overlay", "customImagePath", p);
+  };
+
+  const takeOverlayPhoto = async () => {
+    if (!cam) return;
+    setOverlayCapturing(true);
+    setOverlayCamError(null);
+    try {
+      // The Settings screen can be opened before the main flow ever reaches
+      // the Camera step, so the camera session may not exist yet — detect()
+      // establishes it (same as ScreenCamera's auto stage) before capture()
+      // is attempted, otherwise a real (non-simulated) camera reports back
+      // as not connected even though it's plugged in and working.
+      const d = await cam.detect();
+      if (!d.connected) {
+        setOverlayCamError(S.camera.detect.notFoundBody);
+        return;
+      }
+      const p = await cam.capture();
+      setOverlayPhoto(p.dataUrl);
+    } catch (e) {
+      setOverlayCamError(errText(e));
+    } finally {
+      setOverlayCapturing(false);
+    }
+  };
+
+  // Shared by both the contacts and documentation lists -- move swaps an
+  // entry with its neighbor (used by the reorder buttons), out-of-range
+  // moves are a no-op so the buttons can stay unconditionally wired to
+  // index -1/+1 and just get disabled at the ends.
+  const moveItem = (listKey, i, dir) => {
+    setDraft((d) => {
+      const list = [...(d[listKey] || [])];
+      const j = i + dir;
+      if (j < 0 || j >= list.length) return d;
+      [list[i], list[j]] = [list[j], list[i]];
+      return { ...d, [listKey]: list };
+    });
   };
 
   const updateContact = (i, field, value) => {
@@ -2088,11 +2297,49 @@ function SettingsScreen({ settings, onSave, onClose }) {
   const addContact = () => {
     setDraft((d) => ({
       ...d,
-      helpContacts: [...(d.helpContacts || []), { title: "", description: "", phone: "", email: "" }]
+      helpContacts: [{ title: "", description: "", phone: "", email: "" }, ...(d.helpContacts || [])]
     }));
   };
   const removeContact = (i) => {
     setDraft((d) => ({ ...d, helpContacts: (d.helpContacts || []).filter((_, idx) => idx !== i) }));
+  };
+
+  const updateDoc = (i, field, value) => {
+    setDraft((d) => {
+      const docs = [...(d.helpDocs || [])];
+      const next = { ...docs[i], [field]: value };
+      // Local file and external URL are mutually exclusive -- setting one clears the other.
+      if (field === "localFile" && value) next.externalUrl = "";
+      if (field === "externalUrl" && value) next.localFile = "";
+      docs[i] = next;
+      return { ...d, helpDocs: docs };
+    });
+  };
+  const addDoc = () => {
+    setDraft((d) => ({
+      ...d,
+      helpDocs: [{ name: "", localFile: "", externalUrl: "" }, ...(d.helpDocs || [])]
+    }));
+  };
+  const removeDoc = (i) => {
+    setDraft((d) => ({ ...d, helpDocs: (d.helpDocs || []).filter((_, idx) => idx !== i) }));
+  };
+  const pickDocFile = async (i) => {
+    if (!(window.cfc && window.cfc.settings)) return;
+    const p = await window.cfc.settings.pickDocFile();
+    if (p) updateDoc(i, "localFile", p);
+  };
+
+  const pickVideoPlayer = async () => {
+    if (!(window.cfc && window.cfc.settings)) return;
+    const p = await window.cfc.settings.pickDocFile();
+    if (p) setField("videoPlayerPath", null, p);
+  };
+
+  const pickRpsPath = async () => {
+    if (!(window.cfc && window.cfc.settings)) return;
+    const p = await window.cfc.settings.pickDocFile();
+    if (p) setField("rpsPath", null, p);
   };
 
   const save = async () => {
@@ -2108,12 +2355,18 @@ function SettingsScreen({ settings, onSave, onClose }) {
 
   return (
     <div className="s-info" onClick={onClose}>
-      <div className="s-settings-card s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+      <div
+        className={`s-settings-card s-fadeup ${activeGroup === "help" ? "s-settings-card--wide" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true">
         <button className="s-info-close" onClick={onClose} aria-label={S.common.close}>
           <SI.close size={18} />
         </button>
         <h2 className="s-settings-title">{T.title}</h2>
 
+        <div className="s-settings-content-wrap">
+        <div className={`s-settings-flex ${locked ? "s-settings-blur" : ""}`}>
         <div className="s-settings-layout">
         <nav className="s-settings-nav">
           {groups.map((g) =>
@@ -2126,7 +2379,8 @@ function SettingsScreen({ settings, onSave, onClose }) {
           )}
         </nav>
         <div className="s-settings-body">
-          {activeGroup === "general" && <>
+          {activeGroup === "general" &&
+          <div className="s-settings-compact">
           <section className="s-settings-section">
             <h3>{T.locationTitle}</h3>
             <div className="s-form-row">
@@ -2147,7 +2401,7 @@ function SettingsScreen({ settings, onSave, onClose }) {
                   onChange={(e) => setField("location", "name", e.target.value)} />
               </div>
             </div>
-            <div className="s-field" style={{ marginTop: 14 }}>
+            <div className="s-field" style={{ marginTop: 8 }}>
               <label>{T.stationLabel}</label>
               <input
                 className="s-input"
@@ -2160,21 +2414,129 @@ function SettingsScreen({ settings, onSave, onClose }) {
           <section className="s-settings-section">
             <h3>{T.dataTitle}</h3>
             <div className="s-field">
-              <label>{T.dataFolderLabel}</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <input className="s-input" value={draft.dataDir} readOnly />
-                <button className="s-btn s-btn--ghost" style={{ width: "100%" }} onClick={pickFolder}>{T.changeFolder}</button>
+              <label>{T.pathCompletionLogs}</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="s-btn s-btn--ghost s-btn--sm" onClick={() => pickPath("completionLogs")}>{T.changeFolder}</button>
+                <input className="s-input" style={{ flex: 1 }} value={draft.paths.completionLogs} readOnly />
               </div>
             </div>
-            <label className="s-settings-toggle">
+            <div className="s-field" style={{ marginTop: 8 }}>
+              <label>{T.pathTestPhotos}</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="s-btn s-btn--ghost s-btn--sm" onClick={() => pickPath("testPhotos")}>{T.changeFolder}</button>
+                <input className="s-input" style={{ flex: 1 }} value={draft.paths.testPhotos} readOnly />
+              </div>
+            </div>
+            <div className="s-field" style={{ marginTop: 8 }}>
+              <label>{T.pathDiagnostics}</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="s-btn s-btn--ghost s-btn--sm" onClick={() => pickPath("diagnostics")}>{T.changeFolder}</button>
+                <input className="s-input" style={{ flex: 1 }} value={draft.paths.diagnostics} readOnly />
+              </div>
+            </div>
+          </section>
+
+          <section className="s-settings-section">
+            <h3>{T.skipReasonsTitle}</h3>
+            <label className="s-settings-toggle" style={{ marginTop: 0 }}>
               <input
                 type="checkbox"
                 checked={!!draft.skipReasonPrompt}
                 onChange={(e) => setField("skipReasonPrompt", null, e.target.checked)} />
               {T.skipPromptToggle}
             </label>
+            <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginTop: 10, marginBottom: 8 }} onClick={addReason}>
+              {T.skipReasonAdd}
+            </button>
+            {(draft.skipReasons || []).map((r, i) =>
+            <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                <input className="s-input" style={{ flex: 1 }} value={r} onChange={(e) => updateReason(i, e.target.value)} />
+                <button className="s-btn s-btn--ghost s-btn--sm s-btn--danger" onClick={() => removeReason(i)}>{T.helpRemove}</button>
+              </div>
+            )}
           </section>
-          </>}
+
+          <section className="s-settings-section">
+            <h3>{T.exitCommandsTitle}</h3>
+            <label className="s-settings-toggle" style={{ marginTop: 0 }}>
+              <input
+                type="checkbox"
+                checked={!!draft.rpsLaunchEnabled}
+                onChange={(e) => setField("rpsLaunchEnabled", null, e.target.checked)} />
+              {T.rpsLaunchToggle}
+            </label>
+            {draft.rpsLaunchEnabled &&
+            <div className="s-form-row" style={{ marginTop: 8 }}>
+              <div className="s-field">
+                <label>{T.rpsPathLabel}</label>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    className="s-input"
+                    style={{ flex: 1 }}
+                    value={draft.rpsPath}
+                    readOnly
+                    placeholder={T.rpsPathPlaceholder} />
+                  <button className="s-btn s-btn--ghost s-btn--sm" onClick={pickRpsPath}>{T.helpDocBrowse}</button>
+                </div>
+              </div>
+              <div className="s-field">
+                <label>{T.rpsAppNameLabel}</label>
+                <input
+                  className="s-input"
+                  value={draft.rpsAppName}
+                  placeholder={T.rpsAppNamePlaceholder}
+                  onChange={(e) => setField("rpsAppName", null, e.target.value)} />
+              </div>
+            </div>
+            }
+            <div className="s-field" style={{ marginTop: 12 }}>
+              <label>{T.videoPlayerLabel}</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button className="s-btn s-btn--ghost s-btn--sm" onClick={pickVideoPlayer}>{T.helpDocBrowse}</button>
+                <input
+                  className="s-input"
+                  style={{ flex: 1 }}
+                  value={draft.videoPlayerPath}
+                  readOnly
+                  placeholder={T.videoPlayerPlaceholder} />
+              </div>
+            </div>
+          </section>
+
+          <section className="s-settings-section">
+            <h3>{T.passwordTitle}</h3>
+            <label className="s-settings-toggle">
+              <input
+                type="checkbox"
+                checked={!!draft.settingsPasswordEnabled}
+                onChange={(e) => setField("settingsPasswordEnabled", null, e.target.checked)} />
+              {T.passwordEnableToggle}
+            </label>
+            {draft.settingsPasswordEnabled &&
+            <div className="s-field" style={{ marginTop: 8 }}>
+              <label>{T.passwordFieldLabel}</label>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  className="s-input"
+                  style={{ flex: 1 }}
+                  type={showPassword ? "text" : "password"}
+                  value={draft.settingsPassword}
+                  placeholder={T.passwordPlaceholder}
+                  onChange={(e) => setField("settingsPassword", null, e.target.value)} />
+                {!hasExistingPassword &&
+                <button
+                  type="button"
+                  className="s-btn s-btn--ghost s-btn--sm"
+                  onClick={() => setShowPassword((v) => !v)}>
+                  {showPassword ? T.passwordHide : T.passwordShow}
+                </button>
+                }
+              </div>
+            </div>
+            }
+          </section>
+          </div>
+          }
 
           {activeGroup === "limits" &&
           <section className="s-settings-section">
@@ -2231,12 +2593,20 @@ function SettingsScreen({ settings, onSave, onClose }) {
           <section className="s-settings-section">
             <h3>{T.overlayTitle}</h3>
             <div className="s-settings-overlay-row">
-              <div className="s-settings-overlay-preview">
-                <CenterGuide
-                  offsetXPct={draft.overlay.offsetXPct}
-                  offsetYPct={draft.overlay.offsetYPct}
-                  scalePct={draft.overlay.scalePct}
-                  customSrc={toFileUrl(draft.overlay.customImagePath)} />
+              <div className="s-settings-overlay-preview-col">
+                <div className="s-settings-overlay-preview">
+                  {overlayPhoto &&
+                  <img
+                    src={overlayPhoto}
+                    alt=""
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  }
+                  <CenterGuide
+                    offsetXPct={draft.overlay.offsetXPct}
+                    offsetYPct={draft.overlay.offsetYPct}
+                    scalePct={draft.overlay.scalePct}
+                    customSrc={toFileUrl(draft.overlay.customImagePath)} />
+                </div>
               </div>
               <div className="s-settings-overlay-controls">
                 <div className="s-field">
@@ -2261,9 +2631,10 @@ function SettingsScreen({ settings, onSave, onClose }) {
                     onChange={(e) => setField("overlay", "scalePct", DEFAULT_OVERLAY.scalePct + Number(e.target.value))} />
                 </div>
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button className="s-btn s-btn--ghost" onClick={pickImage}>{T.overlayUpload}</button>
+                  <button className="s-btn s-btn--ghost" style={{ flex: 1 }} onClick={pickImage}>{T.overlayUpload}</button>
                   <button
                     className="s-btn s-btn--ghost"
+                    style={{ flex: 1 }}
                     disabled={
                     draft.overlay.customImagePath == null &&
                     draft.overlay.offsetXPct === DEFAULT_OVERLAY.offsetXPct &&
@@ -2274,42 +2645,88 @@ function SettingsScreen({ settings, onSave, onClose }) {
                     {T.overlayReset}
                   </button>
                 </div>
+                <button
+                  className="s-btn s-btn--ghost"
+                  style={{ width: "100%" }}
+                  disabled={!cam || overlayCapturing}
+                  onClick={takeOverlayPhoto}>
+                  {overlayCapturing ?
+                  <><div className="s-spinner" /> {S.common.takingPhoto}</> :
+                  <><SI.shutter size={16} /> {T.overlayTakePhoto}</>}
+                </button>
+                {overlayCamError && <div className="s-cam-error"><SI.warn size={16} /> {overlayCamError}</div>}
               </div>
             </div>
           </section>
           }
 
-          {activeGroup === "rps" &&
-          <section className="s-settings-section">
-            <h3>{T.rpsTitle}</h3>
-            <div className="s-field">
-              <label>{T.rpsPathLabel}</label>
-              <input
-                className="s-input"
-                value={draft.rpsPath}
-                placeholder={T.rpsPathPlaceholder}
-                onChange={(e) => setField("rpsPath", null, e.target.value)} />
-            </div>
-          </section>
-          }
-
           {activeGroup === "help" &&
+          <div className="s-help-config-cols">
           <section className="s-settings-section">
-            <h3>{T.helpTitle}</h3>
-            <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginBottom: 14 }} onClick={addContact}>{T.helpAdd}</button>
-            {(draft.helpContacts || []).map((c, i) =>
+            <h3>{T.helpDocsTitle}</h3>
+            <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginBottom: 10 }} onClick={addDoc}>{T.helpDocAdd}</button>
+            {(draft.helpDocs || []).map((d, i) =>
             <div key={i} className="s-help-edit-row">
-                <div className="s-form-row">
-                  <div className="s-field">
-                    <label>{T.helpFieldTitle}</label>
-                    <input className="s-input" value={c.title} onChange={(e) => updateContact(i, "title", e.target.value)} />
-                  </div>
-                  <div className="s-field">
-                    <label>{T.helpFieldDescription}</label>
-                    <input className="s-input" value={c.description} onChange={(e) => updateContact(i, "description", e.target.value)} />
+                <div className="s-field">
+                  <label>{T.helpDocFieldName}</label>
+                  <input className="s-input" value={d.name} onChange={(e) => updateDoc(i, "name", e.target.value)} />
+                </div>
+                <div className="s-field" style={{ marginTop: 6 }}>
+                  <label>{T.helpDocFieldLocalFile}</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="s-btn s-btn--ghost s-btn--sm" onClick={() => pickDocFile(i)}>{T.helpDocBrowse}</button>
+                    <input
+                      className="s-input"
+                      style={{ flex: 1 }}
+                      value={d.localFile}
+                      readOnly
+                      placeholder={T.helpDocLocalFilePlaceholder} />
                   </div>
                 </div>
-                <div className="s-form-row" style={{ marginTop: 8 }}>
+                <div className="s-field" style={{ marginTop: 6 }}>
+                  <label>{T.helpDocFieldUrl}</label>
+                  <input
+                    className="s-input"
+                    value={d.externalUrl}
+                    placeholder={T.helpDocUrlPlaceholder}
+                    onChange={(e) => updateDoc(i, "externalUrl", e.target.value)} />
+                </div>
+                <div className="s-help-row-actions">
+                  <button
+                    className="s-btn s-btn--ghost s-btn--sm"
+                    disabled={i === 0}
+                    aria-label={T.helpMoveUp}
+                    onClick={() => moveItem("helpDocs", i, -1)}>
+                    <SI.chevronUp size={12} />
+                  </button>
+                  <button
+                    className="s-btn s-btn--ghost s-btn--sm"
+                    disabled={i === (draft.helpDocs || []).length - 1}
+                    aria-label={T.helpMoveDown}
+                    onClick={() => moveItem("helpDocs", i, 1)}>
+                    <SI.chevronDown size={12} />
+                  </button>
+                  <span className="s-help-reorder-hint">{T.helpChangeOrder}</span>
+                  <button className="s-btn s-btn--ghost s-btn--sm s-btn--danger" onClick={() => removeDoc(i)}>{T.helpRemove}</button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="s-settings-section">
+            <h3>{T.helpTitle}</h3>
+            <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginBottom: 10 }} onClick={addContact}>{T.helpAdd}</button>
+            {(draft.helpContacts || []).map((c, i) =>
+            <div key={i} className="s-help-edit-row">
+                <div className="s-field">
+                  <label>{T.helpFieldTitle}</label>
+                  <input className="s-input" value={c.title} onChange={(e) => updateContact(i, "title", e.target.value)} />
+                </div>
+                <div className="s-field" style={{ marginTop: 6 }}>
+                  <label>{T.helpFieldDescription}</label>
+                  <input className="s-input" value={c.description} onChange={(e) => updateContact(i, "description", e.target.value)} />
+                </div>
+                <div className="s-form-row" style={{ marginTop: 6 }}>
                   <div className="s-field">
                     <label>{T.helpFieldPhone}</label>
                     <input
@@ -2327,12 +2744,28 @@ function SettingsScreen({ settings, onSave, onClose }) {
                       onChange={(e) => updateContact(i, "email", e.target.value)} />
                   </div>
                 </div>
-                <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginTop: 8 }} onClick={() => removeContact(i)}>
-                  {T.helpRemove}
-                </button>
+                <div className="s-help-row-actions">
+                  <button
+                    className="s-btn s-btn--ghost s-btn--sm"
+                    disabled={i === 0}
+                    aria-label={T.helpMoveUp}
+                    onClick={() => moveItem("helpContacts", i, -1)}>
+                    <SI.chevronUp size={12} />
+                  </button>
+                  <button
+                    className="s-btn s-btn--ghost s-btn--sm"
+                    disabled={i === (draft.helpContacts || []).length - 1}
+                    aria-label={T.helpMoveDown}
+                    onClick={() => moveItem("helpContacts", i, 1)}>
+                    <SI.chevronDown size={12} />
+                  </button>
+                  <span className="s-help-reorder-hint">{T.helpChangeOrder}</span>
+                  <button className="s-btn s-btn--ghost s-btn--sm s-btn--danger" onClick={() => removeContact(i)}>{T.helpRemove}</button>
+                </div>
               </div>
             )}
           </section>
+          </div>
           }
         </div>
         </div>
@@ -2343,7 +2776,64 @@ function SettingsScreen({ settings, onSave, onClose }) {
             {saving ? T.saving : T.save}
           </button>
         </div>
+        </div>
+        {locked &&
+        <SettingsPasswordGate
+          correctPassword={settings.settingsPassword}
+          onUnlock={onUnlock}
+          onClose={onClose} />
+        }
+        </div>
       </div>
+    </div>);
+
+}
+
+// ============================================================
+// Settings password gate -- shown over a blurred Settings screen when
+// settingsPasswordEnabled is on and this session hasn't unlocked it yet.
+// ============================================================
+function SettingsPasswordGate({ correctPassword, onUnlock, onClose }) {
+  const G = S.settingsGate;
+  const [value, setValue] = React.useState("");
+  const [wrong, setWrong] = React.useState(false);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (value === correctPassword) onUnlock();
+    else setWrong(true);
+  };
+
+  // Sits inside the Settings card itself (see SettingsScreen), covering
+  // only the (already-blurred) nav/body/footer below the "Application
+  // Settings" title -- a full-viewport backdrop's own blur would otherwise
+  // blur that title too, since backdrop-filter samples everything painted
+  // behind it regardless of z-index tricks on the title.
+  return (
+    <div className="s-gate-inline" onClick={onClose}>
+      <form className="s-gate-card" onClick={(e) => e.stopPropagation()} onSubmit={submit}>
+        <button type="button" className="s-info-close" onClick={onClose} aria-label={S.common.close}>
+          <SI.close size={18} />
+        </button>
+        <div className="s-gate-icon"><SI.lock size={22} /></div>
+        <h3>{G.title}</h3>
+        <p style={{ margin: "0 0 18px", color: "var(--text-2)", fontSize: 15 }}>{G.body}</p>
+        <div className="s-field">
+          <label>{G.fieldLabel}</label>
+          <input
+            className="s-input"
+            type="password"
+            autoFocus
+            value={value}
+            placeholder={G.placeholder}
+            onChange={(e) => { setValue(e.target.value); setWrong(false); }} />
+        </div>
+        {wrong && <div className="s-cam-error"><SI.warn size={16} /> {G.wrongPassword}</div>}
+        <div className="s-help-actions" style={{ marginTop: 18 }}>
+          <button type="button" className="s-btn s-btn--ghost" onClick={onClose}>{G.cancel}</button>
+          <button type="submit" className="s-btn s-btn--primary" disabled={!value}>{G.unlock}</button>
+        </div>
+      </form>
     </div>);
 
 }
@@ -2355,7 +2845,7 @@ function LaunchFlash() {
   return (
     <div id="simple-launch" style={{
       position: "absolute", inset: 0,
-      background: "radial-gradient(ellipse at center, rgba(234,88,12,0.4), rgba(23,27,36,0.96) 65%)",
+      background: "radial-gradient(ellipse at center, rgba(var(--accent-rgb), 0.4), rgba(32, 38, 52, 0.96) 65%)",
       display: "grid", placeItems: "center",
       opacity: 0, pointerEvents: "none",
       transition: "opacity 0.3s ease-out",
@@ -2403,14 +2893,25 @@ function SimpleApp() {
   const [run, setRun] = React.useState(null); // { id, startedAt }
   const [settings, setSettings] = React.useState({
     location: { number: "", name: "", station: "Camera" },
-    dataDir: "",
+    paths: { completionLogs: "", testPhotos: "", diagnostics: "" },
     skipReasonPrompt: true,
+    skipReasons: ["Running late", "Equipment issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
     overlay: { ...DEFAULT_OVERLAY },
+    rpsLaunchEnabled: true,
     rpsPath: "",
+    rpsAppName: "RPS",
     helpContacts: [],
+    helpDocs: [],
+    videoPlayerPath: "",
+    settingsPasswordEnabled: true,
+    settingsPassword: "help123",
   });
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  // Persists for the rest of the running session once the correct password
+  // is entered -- closing and reopening Settings doesn't re-prompt; only
+  // relaunching the app does.
+  const [settingsUnlocked, setSettingsUnlocked] = React.useState(false);
   const [skipPrompt, setSkipPrompt] = React.useState(null); // { screenKey, screenLabel } while the reason modal is open
   const scale = useScale(STAGE_W, STAGE_H);
 
@@ -2482,7 +2983,7 @@ function SimpleApp() {
       case 2:return <ScreenWalkAround checked={walkChecked} setChecked={setWalkChecked} onNext={next} onBack={back} onSkip={() => requestSkip("walkaround", S.steps[1])} />;
       case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} settings={settings} />;
       case 4:return <ScreenTestPhoto onNext={next} onBack={back} onSkip={() => requestSkip("testphoto", S.steps[3])} settings={settings} />;
-      case 5:return <ScreenDone onRestart={restart} run={run} />;
+      case 5:return <ScreenDone onRestart={restart} run={run} settings={settings} />;
       default:return null;
     }
   };
@@ -2506,12 +3007,15 @@ function SimpleApp() {
             {settingsOpen &&
             <SettingsScreen
               settings={settings}
+              locked={settings.settingsPasswordEnabled && !settingsUnlocked}
+              onUnlock={() => setSettingsUnlocked(true)}
               onSave={(next) => setSettings(next)}
               onClose={() => setSettingsOpen(false)} />
             }
             {skipPrompt &&
             <SkipReasonModal
               screenLabel={skipPrompt.screenLabel}
+              reasons={settings.skipReasons}
               onClose={() => setSkipPrompt(null)}
               onConfirm={confirmSkip} />
             }

@@ -1,7 +1,7 @@
 {
   "name": "camera-flight-check",
   "productName": "Camera Flight Check",
-  "version": "1.0.1",
+  "version": "1.2.1",
   "description": "Camera pre-flight utility - daily station readiness check",
   "main": "main.js",
   "scripts": {

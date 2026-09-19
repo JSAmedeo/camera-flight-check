@@ -97,6 +97,23 @@ class HelperCamera {
     const proc = this._proc;
     setTimeout(() => { try { proc.kill(); } catch {} }, 2000);
   }
+
+  // release() alone closes the EDSDK/PTP session but leaves CameraHost.exe
+  // running — the vendor SDK ties the USB claim to the *process*, not just
+  // the session, so a handoff to another app (RPS) can still find the camera
+  // busy even after a successful release. This waits for the helper process
+  // to actually exit before resolving, so the USB device is genuinely free.
+  releaseForHandoff() {
+    if (!this._proc) return Promise.resolve();
+    const proc = this._proc;
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      proc.once("exit", finish);
+      try { proc.stdin.write(JSON.stringify({ id: 0, cmd: "quit" }) + "\n"); } catch {}
+      setTimeout(() => { try { proc.kill(); } catch {}; finish(); }, 3000);
+    });
+  }
 }
 
 // ---------------------------------------------------------------- simulator
@@ -160,6 +177,7 @@ class SimulatorCamera {
   }
 
   async release() { return {}; }
+  async releaseForHandoff() { return {}; }
   quit() {}
 }
 
