@@ -37,10 +37,23 @@ and land in `dist\`.
 
 1. Close anything that may own the camera (RPS, EOS Utility, webcam apps).
 2. Plug in the camera, power ON, mode dial on **M**.
-3. Launch Camera Flight Check → enter name → walk-around → camera check →
-   grey card → test photo → **Close Utility / Open RPS** (this releases the camera).
-4. Data lands in `%APPDATA%\Camera Flight Check\check-runs.jsonl` (one JSON record
-   per run start/completion — this is what will POST to the API later).
+3. Launch Camera Flight Check → Welcome → Set Checklist → Camera (grey-card
+   calibration) → Test photo → **Finish and Launch RPS** (or **Finish and
+   Close** if no exit app is configured — this releases the camera either way).
+4. Data lands in `%APPDATA%\Camera Flight Check\check-runs.jsonl`, plus a
+   per-run session log under whatever folder Settings → General → File
+   Output Paths → Completion Logs points to (one JSON record per run
+   start/completion — this is what will POST to the API later).
+
+## Per-station admin setup (gear icon, top-right)
+
+The Settings screen is **password-protected by default** (`help123`) so
+seasonal staff don't wander into camera limits or the RPS path — change it
+(or turn the lock off) under General → Settings password. Per-station items
+worth setting on first install: location number/station name, the exit app
+to launch on Finish (or turn it off if the station doesn't use one), the
+three File Output Paths if they shouldn't point at the default
+`C:\preflight-ops-check\...` folders, and Help Config's contacts/docs list.
 
 ## Troubleshooting
 

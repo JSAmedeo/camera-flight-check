@@ -11,6 +11,12 @@ screenshots/
 *.log
 npm-debug.log*
 
+# per-run session logs land here when a dev machine's Settings > File
+# Output Paths > Completion Logs happens to point at (or default into) the
+# repo directory instead of C:\preflight-ops-check\Logs -- runtime output,
+# not source
+sessions/
+
 # local machine-specific permission grants (shared allowlist is .claude/settings.json)
 .claude/settings.local.json
 
