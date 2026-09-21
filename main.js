@@ -10,6 +10,54 @@ const { createCamera } = require("./camera-bridge");
 
 const VIDEO_EXTS = [".mp4", ".mov", ".avi", ".wmv", ".mkv", ".m4v", ".webm"];
 
+// How many grey-card calibration attempts' worth of evidence (CFC-06) to
+// keep live on disk before pruning the oldest. A single station running one
+// check per shift stays well under this for weeks; it exists so a season of
+// daily runs doesn't accumulate unbounded JPEGs.
+const CALIBRATION_RETENTION = 30;
+// Pruned folders aren't deleted outright -- they move to calibrations/.trash
+// and linger there for this many more generations before permanent removal.
+// A recovery window against a bad retention value, a future bug in this
+// function, or an operator/admin deleting the wrong thing by hand (see
+// CLAUDE.md gotcha #22 -- an over-broad cleanup command once wiped this
+// entire folder in one shot; nothing here should ever be a single rm again).
+const CALIBRATION_TRASH_RETENTION = 60;
+
+// Moves the oldest calibration-evidence directories beyond the retention cap
+// into a .trash subfolder (never deletes them directly), then permanently
+// removes whatever in .trash has itself aged past CALIBRATION_TRASH_RETENTION.
+// Called once at startup (not per-save) per REMEDIATION-PLAN.md CFC-06.
+function pruneCalibrationDiagnostics() {
+  try {
+    const base = path.join(settings.paths.diagnostics, "calibrations");
+    if (!fs.existsSync(base)) return;
+    const trash = path.join(base, ".trash");
+    const listByAge = (dir) => fs.readdirSync(dir)
+      .filter((name) => name !== ".trash")
+      .map((name) => {
+        const full = path.join(dir, name);
+        return { name, full, mtime: fs.statSync(full).mtimeMs };
+      })
+      .sort((a, b) => b.mtime - a.mtime);
+
+    const live = listByAge(base);
+    const overflow = live.slice(CALIBRATION_RETENTION);
+    if (overflow.length) {
+      fs.mkdirSync(trash, { recursive: true });
+      for (const d of overflow) {
+        try { fs.renameSync(d.full, path.join(trash, d.name)); } catch {}
+      }
+    }
+    if (fs.existsSync(trash)) {
+      for (const d of listByAge(trash).slice(CALIBRATION_TRASH_RETENTION)) {
+        fs.rmSync(d.full, { recursive: true, force: true });
+      }
+    }
+  } catch (e) {
+    console.log("[main] calibration diagnostics prune failed:", e.message);
+  }
+}
+
 // ---------------------------------------------------------------- settings
 // Admin-configurable app settings, persisted to settings.json in userData.
 // Loaded once at startup; `settings` is updated in place on every save so
@@ -63,6 +111,14 @@ function defaultSettings() {
     // position, so reordering/renaming/removing it is safe.
     skipReasons: ["Running late", "Equipment issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
+    // The grey-card escape hatch (REMEDIATION-PLAN.md CFC-04) reverts to
+    // these instead of leaving the camera at whatever it happened to be set
+    // to when a reading can't be trusted -- a known-good starting point for
+    // this station's lighting rather than an arbitrary in-progress value.
+    // Matched to the nearest value the camera actually reports at apply time
+    // (see nearestValue/nearestShutter/nearestWb in simple-app-bundled.jsx),
+    // so these don't need to be exact camera-vocabulary strings.
+    cameraDefaults: { iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
     // Field-tuned so the bundled guide matches a well-framed reference photo
     // (head ~2/5 down the frame, feet in the lower portion just above the
     // bottom) rather than the guide's native full-bleed proportions (scale
@@ -100,6 +156,12 @@ function defaultSettings() {
     // to be handed out with training materials, same as any other doc here.
     settingsPasswordEnabled: true,
     settingsPassword: "help123",
+    // Persists the calibration photo + full analysis/plan/applied record for
+    // every grey-card attempt under paths.diagnostics/calibrations/ -- see
+    // REMEDIATION-PLAN.md CFC-06. On by default during field validation so a
+    // bad WB reading leaves evidence instead of being un-diagnosable after
+    // the fact; retention is capped (see CALIBRATION_RETENTION below).
+    calibrationDiagnosticsEnabled: true,
   };
 }
 
@@ -108,7 +170,7 @@ function defaultSettings() {
 function mergeSettings(saved, defaults) {
   defaults = defaults || defaultSettings();
   const merged = { ...defaults, ...saved };
-  for (const key of ["location", "cameraLimits", "overlay", "paths"]) {
+  for (const key of ["location", "cameraLimits", "cameraDefaults", "overlay", "paths"]) {
     merged[key] = { ...defaults[key], ...(saved[key] || {}) };
   }
   return merged;
@@ -212,6 +274,32 @@ function setupSettings() {
       return { ok: true };
     }
     return { ok: false, error: "no-target" };
+  });
+
+  // Persists one grey-card calibration attempt's evidence (the captured
+  // photo + the full analysis/plan/applied record) so a bad WB reading in
+  // the field can actually be diagnosed instead of just re-guessed at.
+  // See REMEDIATION-PLAN.md CFC-06. Fire-and-forget from the renderer --
+  // never blocks the operator's flow, and a write failure here shouldn't
+  // surface as a camera error.
+  ipcMain.handle("calibration:save", async (_e, payload) => {
+    if (!settings.calibrationDiagnosticsEnabled) return { ok: false, skipped: true };
+    try {
+      const dirName = `${(payload && payload.runId) || "no-run"}-${Date.now()}`;
+      const dir = path.join(settings.paths.diagnostics, "calibrations", dirName);
+      fs.mkdirSync(dir, { recursive: true });
+      if (payload && payload.photoFile && fs.existsSync(payload.photoFile)) {
+        // Preserve the real extension -- the simulator's stand-in captures
+        // are PNGs, real hardware captures are JPEGs; hardcoding .jpg would
+        // mislabel the former.
+        const ext = path.extname(payload.photoFile) || ".jpg";
+        try { fs.copyFileSync(payload.photoFile, path.join(dir, "capture" + ext)); } catch {}
+      }
+      fs.writeFileSync(path.join(dir, "analysis.json"), JSON.stringify((payload && payload.analysisRecord) || {}, null, 2));
+      return { ok: true, dir };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
   });
 
   // Launches RPS (the photo sales app) at the admin-configured path. Checked
@@ -358,6 +446,12 @@ function createWindow() {
 
   ipcMain.on("win:minimize", () => win.minimize());
   ipcMain.on("win:close", () => win.close());
+  // Synchronous by design -- preload reads this once at load time to decide
+  // whether the global keyboard-navigation shortcuts should exist at all
+  // (see REMEDIATION-PLAN.md CFC-03: they bypass every step gate, so they
+  // must not exist in packaged/field builds). `electron .` (dev, headless
+  // verification) is always unpackaged, so this stays permissive there.
+  ipcMain.on("app:isPackagedSync", (e) => { e.returnValue = app.isPackaged; });
   win.loadFile(path.join(__dirname, process.argv.includes("--verify") ? "__verify.html" : "Camera Flight Check.html"));
 
   win.once("ready-to-show", () => {
@@ -391,6 +485,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   setupSettings();
+  pruneCalibrationDiagnostics();
   setupCamera();
   createWindow();
 });

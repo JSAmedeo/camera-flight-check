@@ -205,6 +205,14 @@ const SI = {
 // ============================================================
 const cam = (window.cfc && window.cfc.camera) || null;
 
+// True for dev/headless-verification runs (electron . is always unpackaged),
+// false in packaged/field builds. Gates the global keyboard-navigation
+// shortcuts in SimpleApp — see REMEDIATION-PLAN.md CFC-03: they call next()/
+// back()/restart() directly, bypassing every step gate the screens enforce,
+// and have no business existing in a touch/mouse kiosk app an operator could
+// stumble into via a stray keypress.
+const DEV_MODE = !(window.cfc && window.cfc.isPackaged);
+
 // All operator-facing copy lives in strings.js (window.CFC_STRINGS)
 const S = window.CFC_STRINGS;
 const fmt = (tpl, vars) => String(tpl).replace(/\{(\w+)\}/g, (m, k) => vars[k] != null ? vars[k] : "");
@@ -249,7 +257,13 @@ function averageRegion(imgEl, nat) {
   const n = data.length / 4;
   for (let i = 0; i < data.length; i += 4) {
     r += data[i]; g += data[i + 1]; b += data[i + 2];
-    if (data[i] >= 250 || data[i + 1] >= 250 || data[i + 2] >= 250) clipped++;
+    // A true blown highlight (specular glare) saturates all three channels
+    // together, since the light source is neutral. Flagging on any ONE
+    // channel also caught a strong color cast (e.g. a blue-shifted WB
+    // pegging just the blue channel) as "too bright to read" -- that's a
+    // WB problem, not a clipping problem, and the grey card is exactly
+    // what's supposed to fix it. Require all three near-max instead.
+    if (Math.min(data[i], data[i + 1], data[i + 2]) >= 250) clipped++;
   }
   return { r: r / n, g: g / n, b: b / n, clipped: clipped / n };
 }
@@ -281,6 +295,42 @@ function nearestValue(list, target) {
     if (d < bestDiff) { bestDiff = d; best = v; }
   }
   return best;
+}
+
+// Shutter speeds are reported as fractions ("1/125") or plain seconds ("2",
+// "0.3") -- parseFloat alone reads "1/125" as 1. "Bulb" has no fixed duration.
+function parseShutterSeconds(v) {
+  const s = String(v).trim();
+  if (!s || s.toLowerCase() === "bulb") return null;
+  if (s.includes("/")) {
+    const [num, den] = s.split("/").map(Number);
+    return den ? num / den : null;
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function nearestShutter(list, target) {
+  const targetSecs = parseShutterSeconds(target);
+  if (targetSecs == null) return null;
+  let best = null, bestDiff = Infinity;
+  for (const v of list || []) {
+    const secs = parseShutterSeconds(v);
+    if (secs == null) continue;
+    // stops apart, not raw seconds -- shutter speeds are spaced geometrically
+    const d = Math.abs(Math.log2(secs) - Math.log2(targetSecs));
+    if (d < bestDiff) { bestDiff = d; best = v; }
+  }
+  return best;
+}
+
+// White balance presets are named, not numeric -- match the admin's default
+// by name (case-insensitively) rather than trying to rank them by Kelvin.
+function nearestWb(list, target) {
+  if (!target) return null;
+  const exact = (list || []).find((w) => w === target);
+  if (exact) return exact;
+  return (list || []).find((w) => String(w).toLowerCase() === String(target).toLowerCase()) || null;
 }
 
 // Decide what to change on the camera. Strobe-lit set: exposure moves via
@@ -867,23 +917,57 @@ function GreyCardHelpModal({ onClose }) {
 
 }
 
+// Confirms a "Revert to default settings" write (CFC-04 escape hatch) and
+// lists what the camera is actually set to now. No backdrop-click or Escape
+// dismissal on purpose -- the photo on screen was taken under whatever
+// settings caused the rejection, so the only way out is Retake, which
+// captures a fresh one under the settings just shown here.
+function RevertedSettingsModal({ settings: s, onRetake }) {
+  return (
+    <div className="s-info">
+      <div className="s-info-card s-fadeup" role="dialog" aria-modal="true">
+        <div className="s-info-head">
+          <h3 className="s-info-title">{S.camera.select.revertedTitle}</h3>
+        </div>
+        <p style={{ margin: "0 0 16px", color: "var(--text-2)", fontSize: 15 }}>{S.camera.select.revertedBody}</p>
+        <SettingsStrip s={s} />
+        <div className="s-tut-foot" style={{ justifyContent: "flex-end", marginTop: 20 }}>
+          <button className="s-btn s-btn--primary" onClick={onRetake}>
+            <SI.retake size={16} /> {S.camera.select.retakePhoto}
+          </button>
+        </div>
+      </div>
+    </div>);
+
+}
+
 // ============================================================
 // Screen 3 — Camera check (real detect → capture → grey-card region → apply)
 // Stages: "auto" -> "shoot" -> "select" -> "applied"
 // ============================================================
-function ScreenCamera({ onNext, onBack, onSkip, settings }) {
+function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
   const [stage, setStage] = React.useState("auto");
   const [detected, setDetected] = React.useState(null); // {model, serial}
   const [camSettings, setCamSettings] = React.useState(null);
   const [camError, setCamError] = React.useState(null);
   const [autoProgress, setAutoProgress] = React.useState(0);
   const [photo, setPhoto] = React.useState(null); // dataUrl of calibration shot
+  const [photoFile, setPhotoFile] = React.useState(null); // on-disk path of the same capture, for CFC-06 diagnostics
   const [busy, setBusy] = React.useState(false);
   const [busyLabel, setBusyLabel] = React.useState("");
   const [selBox, setSelBox] = React.useState(null);
   const [result, setResult] = React.useState(null); // {analysis, plan, applied, rejected, before, after, refreshFailed}
   const [refreshing, setRefreshing] = React.useState(false);
   const [greyCardHelp, setGreyCardHelp] = React.useState(false);
+  // Counts sanity-gate rejections for the current photo (CFC-04) -- once a
+  // real lighting problem (glare, shadow) can fail every box placement, the
+  // operator needs an escape hatch after one retry rather than infinite
+  // redraws as the only path forward. Resets on each new photo.
+  const [selectRejectCount, setSelectRejectCount] = React.useState(0);
+  // Holds the camera's settings right after a "Revert to default settings"
+  // write, so the confirmation popup can list what actually took effect;
+  // null when the popup isn't showing.
+  const [revertedSettings, setRevertedSettings] = React.useState(null);
 
   // ---------- detection ----------
   const runAuto = React.useCallback(async () => {
@@ -915,12 +999,27 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
     try {
       const p = await cam.capture();
       setPhoto(p.dataUrl);
+      setPhotoFile(p.file || null);
       setSelBox(null);
       setResult(null);
+      setSelectRejectCount(0);
       setStage("select");
     } catch (e) {
       setCamError(errText(e));
     } finally { setBusy(false); }
+  };
+
+  // Fire-and-forget CFC-06 diagnostics write, shared by every outcome of a
+  // grey-card attempt (applied, gate-rejected, or escape-hatch skipped) so a
+  // field dispute over "why did it reject this" has real pixel data behind
+  // it instead of a guess from a screenshot.
+  const saveDiagnostics = (extra) => {
+    if (!(window.cfc && window.cfc.calibration)) return;
+    window.cfc.calibration.save({
+      runId: run && run.id,
+      photoFile,
+      analysisRecord: { capturedAt: new Date().toISOString(), ...extra }
+    }).catch(() => {});
   };
 
   // ---------- grey-card region chosen ----------
@@ -928,6 +1027,39 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
     setBusy(true); setBusyLabel(S.camera.select.balancing); setCamError(null);
     try {
       const analysis = analyzeGreyCard(imgEl, box);
+      const nat = mapRegionToNatural(imgEl, box);
+
+      // Sanity gate (REMEDIATION-PLAN.md CFC-04) -- refuse to write anything
+      // to the camera on a sample that can't plausibly be the grey card, and
+      // send the operator back to redraw with a reason instead of silently
+      // basing a correction on backdrop, shadow, or skin. Checked in the
+      // order a bad tap is most likely to fail: blown-out, too dark/missed
+      // the card, or too saturated to be a neutral grey surface.
+      const { r: avgR, g: avgG, b: avgB } = analysis.avg; // avoid shadowing cam.set()'s `r` result below
+      const meanLuma = (avgR + avgG + avgB) / 3; // coarse 8-bit plausibility check, not the linear Y used for exposure
+      const channelSpread = Math.max(avgR, avgG, avgB) / Math.max(Math.min(avgR, avgG, avgB), 1);
+      let reasonCode = null;
+      if (analysis.clipped >= CLIP_LIMIT) reasonCode = "clipped";
+      else if (meanLuma < 40 || meanLuma > 220) reasonCode = "offCard";
+      else if (channelSpread > 2.5) reasonCode = "saturated";
+      // One message covers all three (rather than a distinct reason per
+      // check) since the operator's next move is the same either way: fix
+      // the box, or -- if the photo itself is too bright/dark -- revert to
+      // this station's default settings and retake. reasonCode is still
+      // kept distinct for diagnostics.
+      if (reasonCode) {
+        setCamError(S.camera.select.rejectGeneric);
+        setSelBox(null);
+        setSelectRejectCount((n) => n + 1);
+        saveDiagnostics({
+          outcome: "rejected", reasonCode,
+          box: { display: box, natural: nat },
+          avg: analysis.avg, evDelta: analysis.evDelta, warmth: analysis.warmth,
+          cameraSettingsBeforeAnalysis: camSettings
+        });
+        return;
+      }
+
       const plan = planCorrections(camSettings, analysis, settings.cameraLimits);
       const before = {
         iso: camSettings.iso, wb: camSettings.wb,
@@ -947,9 +1079,82 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
       setCamSettings(after);
       setResult({ analysis, plan, applied, rejected, before, after, refreshFailed });
       setStage("applied");
+
+      saveDiagnostics({
+        outcome: "applied",
+        box: { display: box, natural: nat },
+        avg: analysis.avg, evDelta: analysis.evDelta, warmth: analysis.warmth,
+        cameraSettingsBeforeAnalysis: camSettings,
+        plan, applied, rejected
+      });
     } catch (e) {
       setCamError(errText(e));
     } finally { setBusy(false); }
+  };
+
+  // Escape hatch (REMEDIATION-PLAN.md CFC-04) -- once the sanity gate has
+  // rejected at least one attempt, a real lighting problem (glare, shadow, a
+  // card the strobe can't reach) can make every possible box placement fail.
+  // Rather than trap the operator in redraw after redraw with no way
+  // through, revert the camera to this station's known-good default settings
+  // (admin-configured, Settings → Camera → Default Camera Settings) instead
+  // of leaving it at whatever it happened to be mid-adjustment -- clearly
+  // disclosed on the next screen so a detected problem is never left
+  // unexplained. Each default is matched to the nearest value this camera
+  // actually reports, same tolerant approach as the grey-card correction
+  // plan, so the admin doesn't need to type exact camera-vocabulary strings.
+  const revertToDefaults = async () => {
+    setBusy(true); setBusyLabel(S.camera.select.balancing); setCamError(null);
+    try {
+      const d = settings.cameraDefaults || {};
+      const before = {
+        iso: camSettings.iso, wb: camSettings.wb,
+        aperture: camSettings.aperture, shutter: camSettings.shutter
+      };
+      const plan = {};
+      if (d.iso) {
+        const v = nearestValue(camSettings.isoValues, parseFloat(d.iso));
+        if (v && v !== before.iso) plan.iso = v;
+      }
+      if (d.aperture) {
+        const v = nearestValue(camSettings.apertureValues, parseFloat(d.aperture));
+        if (v && v !== before.aperture) plan.aperture = v;
+      }
+      if (d.shutter) {
+        const v = nearestShutter(camSettings.shutterValues, d.shutter);
+        if (v && v !== before.shutter) plan.shutter = v;
+      }
+      if (d.wb) {
+        const v = nearestWb(camSettings.wbValues, d.wb);
+        if (v && v !== before.wb) plan.wb = v;
+      }
+      let applied = {}, rejected = {};
+      if (Object.keys(plan).length) {
+        const r = await cam.set(plan);
+        applied = r.applied || {}; rejected = r.rejected || {};
+      }
+      let after = null;
+      try { after = await cam.settings(); } catch {}
+      if (!after) after = { ...camSettings, ...applied };
+      setCamSettings(after);
+      setRevertedSettings(after);
+      saveDiagnostics({
+        outcome: "reverted", reasonAtRevert: camError,
+        cameraDefaults: d, plan, applied, rejected,
+        cameraSettingsBeforeAnalysis: camSettings
+      });
+    } catch (e) {
+      setCamError(errText(e));
+    } finally { setBusy(false); }
+  };
+
+  // Closes the reverted-settings confirmation and immediately takes a fresh
+  // photo at the new settings, landing back on this same box-selection
+  // screen -- the old photo was taken under whatever settings caused the
+  // rejection, so it's never reused after a revert.
+  const retakeAfterRevert = () => {
+    setRevertedSettings(null);
+    takePhoto();
   };
 
   // ---------- Stage: auto ----------
@@ -1176,6 +1381,11 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
                 </div>
                 }
                 {camError && <div className="s-cam-error"><SI.warn size={16} /> {camError}</div>}
+                {selectRejectCount > 0 &&
+                <button className="s-btn s-qa-skip-continue" style={{ marginTop: 10 }} disabled={busy} onClick={revertToDefaults}>
+                  <SI.skip size={14} /> {S.camera.select.revertToDefaults}
+                </button>
+                }
               </div>
             </div>
           </div>
@@ -1187,6 +1397,9 @@ function ScreenCamera({ onNext, onBack, onSkip, settings }) {
               <SI.retake size={16} /> {S.camera.select.retakePhoto}
             </button>
           } />
+        {revertedSettings &&
+        <RevertedSettingsModal settings={revertedSettings} onRetake={retakeAfterRevert} />
+        }
       </>);
   }
 
@@ -2195,7 +2408,7 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
 
   const groups = [
     { key: "general", label: T.groupGeneral, icon: <SI.pin size={16} /> },
-    { key: "limits", label: T.groupLimits, icon: <SI.gear size={16} /> },
+    { key: "camera", label: T.groupCamera, icon: <SI.gear size={16} /> },
     { key: "overlay", label: T.groupOverlay, icon: <SI.framing size={16} /> },
     { key: "help", label: T.groupHelp, icon: <SI.help size={16} /> }
   ];
@@ -2434,6 +2647,13 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
                 <input className="s-input" style={{ flex: 1 }} value={draft.paths.diagnostics} readOnly />
               </div>
             </div>
+            <label className="s-settings-toggle">
+              <input
+                type="checkbox"
+                checked={!!draft.calibrationDiagnosticsEnabled}
+                onChange={(e) => setField("calibrationDiagnosticsEnabled", null, e.target.checked)} />
+              {T.calibrationDiagnosticsToggle}
+            </label>
           </section>
 
           <section className="s-settings-section">
@@ -2538,7 +2758,44 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
           </div>
           }
 
-          {activeGroup === "limits" &&
+          {activeGroup === "camera" &&
+          <>
+          <section className="s-settings-section">
+            <h3>{T.defaultsTitle}</h3>
+            <p style={{ margin: "-4px 0 14px", color: "var(--text-2)", fontSize: 14 }}>{T.defaultsLede}</p>
+            <div className="s-form-row">
+              <div className="s-field">
+                <label>{T.defaultsIso}</label>
+                <input
+                  className="s-input" type="number" placeholder="400"
+                  value={draft.cameraDefaults.iso ?? ""}
+                  onChange={(e) => setField("cameraDefaults", "iso", e.target.value)} />
+              </div>
+              <div className="s-field">
+                <label>{T.defaultsShutter}</label>
+                <input
+                  className="s-input" placeholder="1/125"
+                  value={draft.cameraDefaults.shutter ?? ""}
+                  onChange={(e) => setField("cameraDefaults", "shutter", e.target.value)} />
+              </div>
+            </div>
+            <div className="s-form-row" style={{ marginTop: 14 }}>
+              <div className="s-field">
+                <label>{T.defaultsAperture}</label>
+                <input
+                  className="s-input" type="number" step="0.1" placeholder="7"
+                  value={draft.cameraDefaults.aperture ?? ""}
+                  onChange={(e) => setField("cameraDefaults", "aperture", e.target.value)} />
+              </div>
+              <div className="s-field">
+                <label>{T.defaultsWb}</label>
+                <input
+                  className="s-input" placeholder="Auto"
+                  value={draft.cameraDefaults.wb ?? ""}
+                  onChange={(e) => setField("cameraDefaults", "wb", e.target.value)} />
+              </div>
+            </div>
+          </section>
           <section className="s-settings-section">
             <h3>{T.limitsTitle}</h3>
             <div className="s-field">
@@ -2587,6 +2844,7 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
               </div>
             </div>
           </section>
+          </>
           }
 
           {activeGroup === "overlay" &&
@@ -2897,6 +3155,7 @@ function SimpleApp() {
     skipReasonPrompt: true,
     skipReasons: ["Running late", "Equipment issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
+    cameraDefaults: { iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
     overlay: { ...DEFAULT_OVERLAY },
     rpsLaunchEnabled: true,
     rpsPath: "",
@@ -2906,6 +3165,7 @@ function SimpleApp() {
     videoPlayerPath: "",
     settingsPasswordEnabled: true,
     settingsPassword: "help123",
+    calibrationDiagnosticsEnabled: true,
   });
   const [settingsOpen, setSettingsOpen] = React.useState(false);
   // Persists for the rest of the running session once the correct password
@@ -2964,8 +3224,12 @@ function SimpleApp() {
     next();
   };
 
-  // Keyboard nav
+  // Keyboard nav -- dev/headless-verification convenience only (see
+  // DEV_MODE above). Does not exist at all in packaged builds: it calls
+  // next()/back()/restart() directly with no gating, and an operator has no
+  // reason to drive this app from a keyboard.
   React.useEffect(() => {
+    if (!DEV_MODE) return;
     const onKey = (e) => {
       const t = e.target;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
@@ -2981,7 +3245,7 @@ function SimpleApp() {
     switch (step) {
       case 1:return <ScreenWelcome onStart={startCheck} settings={settings} />;
       case 2:return <ScreenWalkAround checked={walkChecked} setChecked={setWalkChecked} onNext={next} onBack={back} onSkip={() => requestSkip("walkaround", S.steps[1])} />;
-      case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} settings={settings} />;
+      case 3:return <ScreenCamera onNext={next} onBack={back} onSkip={() => requestSkip("camera", S.steps[2])} settings={settings} run={run} />;
       case 4:return <ScreenTestPhoto onNext={next} onBack={back} onSkip={() => requestSkip("testphoto", S.steps[3])} settings={settings} />;
       case 5:return <ScreenDone onRestart={restart} run={run} settings={settings} />;
       default:return null;

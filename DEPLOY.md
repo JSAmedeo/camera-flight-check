@@ -64,6 +64,26 @@ three File Output Paths if they shouldn't point at the default
   from the package; rebuild with `npm run package`. Forcing simulator on purpose:
   run with `--simulate`.
 - **SmartScreen blocks the app** — More info → Run anyway (unsigned build).
+- **Grey-card correction looks wrong** (bad white balance, unexpected result, or the box
+  keeps getting rejected as "doesn't look like a grey card") — every attempt is saved
+  under Settings → General → File Output Paths → Diagnostics →
+  `calibrations\<runId>-<timestamp>\`: the exact photo analyzed (`capture.jpg`, only for
+  attempts that got far enough to be analyzed) plus the full record (`analysis.json`),
+  including ones the app rejected (`"outcome": "rejected"`) or reverted
+  (`"outcome": "reverted"`). Grab that folder before troubleshooting further — it's the
+  fastest way to tell whether the sampled box was actually on the card. If a station's
+  lighting makes every box placement fail (badly over/underexposed, glare, a shadow the
+  strobe can't reach), the rejection message points at a "Revert to default settings"
+  button next to Retake photo — it sets the camera to this station's configured defaults
+  (Settings → Camera → Default Camera Settings — ISO/shutter/f-stop/white balance,
+  shipped as ISO 400, 1/125, f/7, Auto) instead of leaving it at whatever it was
+  mid-adjustment, shows a popup confirming what it's now set to, and takes a fresh photo
+  on "Retake photo" so the operator lands right back on box-selection to try the grey
+  card again. Turn diagnostics off under the General Settings tab ("Save a copy of each
+  grey-card photo and reading") if a station shouldn't collect it; the newest 30 attempts
+  stay in `calibrations\`, and older ones move to `calibrations\.trash\` rather than being
+  deleted outright — recoverable there for a while (60 more generations) if something
+  needed gets pruned before you grab it.
 
 ## Rebuilding the artifacts
 
