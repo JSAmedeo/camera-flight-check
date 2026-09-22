@@ -20,9 +20,24 @@ and land in `dist\`.
 
 **File:** `dist\CameraFlightCheck-<version>-portable.zip`
 
+**This is the deployment path used for the Kaseya rollout** — pushed to each
+station and unzipped by the Kaseya procedure.
+
 1. Unzip anywhere (e.g. `C:\CameraFlightCheck\`).
-2. Run `Camera Flight Check.exe` from the unzipped folder.
-3. Delete the folder to remove it completely.
+2. **Unblock the extracted files before first launch** — a zip downloaded
+   over the network carries Windows' "Mark of the Web," which is what
+   triggers the SmartScreen prompt below. Clearing it here avoids the
+   prompt entirely instead of relying on someone clicking through it at
+   the station. Add this as a step in the Kaseya procedure right after the
+   files land, before the app is ever run:
+   ```powershell
+   Get-ChildItem -Path "C:\CameraFlightCheck" -Recurse | Unblock-File
+   ```
+   (adjust the path to wherever that Kaseya step actually extracts to). No
+   admin rights needed. This has to run again for every new version pushed
+   — the mark is per-file, not per-folder-location.
+3. Run `Camera Flight Check.exe` from the unzipped folder.
+4. Delete the folder to remove it completely.
 
 ## Station PC requirements
 
@@ -63,7 +78,12 @@ three File Output Paths if they shouldn't point at the default
 - **App opens as "Simulator"** (badge in the top bar) — the camera helper is missing
   from the package; rebuild with `npm run package`. Forcing simulator on purpose:
   run with `--simulate`.
-- **SmartScreen blocks the app** — More info → Run anyway (unsigned build).
+- **SmartScreen blocks the app** ("Windows protected your PC") — the build is unsigned,
+  so any copy that still carries Windows' "Mark of the Web" (anything that arrived over
+  a network rather than local media) triggers this. The Kaseya procedure should already
+  run `Unblock-File` on the extracted folder before first launch (see Option B) — if it's
+  still prompting, that step didn't run or ran against the wrong path. One-off fix on a
+  single machine: More info → Run anyway, or `Unblock-File` by hand on that install.
 - **Grey-card correction looks wrong** (bad white balance, unexpected result, or the box
   keeps getting rejected as "doesn't look like a grey card") — every attempt is saved
   under Settings → General → File Output Paths → Diagnostics →

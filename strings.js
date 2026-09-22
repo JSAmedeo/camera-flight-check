@@ -283,10 +283,15 @@ window.CFC_STRINGS = {
       retakePhoto: "Retake photo",
       confirmBox: "Use this box",
       discardBox: "Remove this box",
-      rejectGeneric: "The selected area doesn't look like a grey card. Make sure the box is right on the card and try again. If the photo is overly bright or dark, try reverting your camera settings to default using the button below - then retake the picture.",
+      rejectGeneric: "The selected area doesn't look like a grey card. Make sure the box is right on the card and try again.\n\nIf the photo is overly bright or dark, try reverting your camera settings to default using the button below - then retake the picture.\n\nIf you have already reverted the camera to default settings and the image is still too bright or dark, try increasing or decreasing your external flash output.",
       revertToDefaults: "Revert to default settings",
       revertedTitle: "Camera settings reverted",
       revertedBody: "Your camera has been set to this station's default settings. Take a new photo to try the grey card again.",
+      // Terminal escape hatch (CFC-04): some problems, like a manual external
+      // flash slider, aren't fixable from software at all. Proceeding makes
+      // no camera changes -- it just stops the operator from being stuck
+      // redrawing/reverting in a loop with no way past a real hardware limit.
+      proceedWithPicture: "Proceed with this picture",
     },
     applied: {
       title: "Your camera is ready",
@@ -329,6 +334,13 @@ window.CFC_STRINGS = {
       rejected: "The camera refused {key} = {value} — check the mode dial",
       refreshFailed: "The camera was busy after applying — values shown are what was sent. They'll refresh on the next photo.",
       redoGreyCard: "Redo grey card calibration",
+      // "Proceed with this picture" path (CFC-04): no usable grey-card
+      // reading, operator moved on anyway -- a real hardware limit (e.g. a
+      // manual external flash slider) can make every attempt fail.
+      uncalibratedFound: "We couldn't get a clean reading from the grey card, so brightness and color weren't checked.",
+      uncalibratedChangedLabel: "Camera settings",
+      uncalibratedChanged: "Left as-is — nothing was changed automatically.",
+      ledeUncalibrated: "We couldn't get a usable reading from the grey card, so nothing was measured or changed.",
     },
     stats: {
       model: "Model",

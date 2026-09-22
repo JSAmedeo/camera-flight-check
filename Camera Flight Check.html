@@ -78,12 +78,16 @@
     font-size: 14.5px;
   }
   .s-cam-error {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: flex-start; gap: 10px;
     margin-top: 10px; padding: 12px 14px; border-radius: var(--radius-sm);
     background: var(--fail-soft); border: 1px solid rgba(var(--fail-rgb), 0.35);
     color: var(--text-2); font-size: 14px; line-height: 1.4; text-align: left;
+    /* Some messages (the grey-card rejection) are several short paragraphs
+       separated by blank lines rather than one block -- preserve those
+       instead of collapsing them the way normal text flow would. */
+    white-space: pre-line;
   }
-  .s-cam-error svg { color: var(--fail); flex: 0 0 auto; }
+  .s-cam-error svg { color: var(--fail); flex: 0 0 auto; margin-top: 2px; }
   .s-cam-warn {
     display: flex; align-items: center; gap: 10px;
     margin-top: 10px; padding: 12px 14px; border-radius: var(--radius-sm);

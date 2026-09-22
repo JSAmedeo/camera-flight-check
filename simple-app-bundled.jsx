@@ -1157,6 +1157,20 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
     takePhoto();
   };
 
+  // Terminal escape hatch (CFC-04): some problems aren't fixable from this
+  // app at all -- a manual external flash slider has no software control,
+  // so reverting to default camera settings can't help a scene that's
+  // blown out by the flash itself. Rather than trap the operator between
+  // "redraw the box" and "revert settings" forever, let them move past the
+  // whole calibration step with nothing changed, clearly disclosed on the
+  // next screen (never leave a detected problem unexplained).
+  const proceedWithPicture = () => {
+    const now = { iso: camSettings.iso, wb: camSettings.wb, aperture: camSettings.aperture, shutter: camSettings.shutter };
+    setResult({ analysis: null, before: now, after: now, applied: {}, rejected: {}, refreshFailed: false });
+    setStage("applied");
+    saveDiagnostics({ outcome: "proceeded", reasonAtProceed: camError, cameraSettingsBeforeAnalysis: camSettings });
+  };
+
   // ---------- Stage: auto ----------
   if (stage === "auto") {
     const rows = [
@@ -1342,7 +1356,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
                 <p className="s-lede s-lede--left">
                   {busy ? S.camera.select.ledeBusy : S.camera.select.lede}
                 </p>
-                {!busy &&
+                {!busy && !camError &&
                 <ul className="s-checklist s-checklist--grouped">
                   <li>
                     <span className="s-checklist-dot" />
@@ -1382,9 +1396,14 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
                 }
                 {camError && <div className="s-cam-error"><SI.warn size={16} /> {camError}</div>}
                 {selectRejectCount > 0 &&
-                <button className="s-btn s-qa-skip-continue" style={{ marginTop: 10 }} disabled={busy} onClick={revertToDefaults}>
-                  <SI.skip size={14} /> {S.camera.select.revertToDefaults}
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
+                  <button className="s-btn s-qa-skip-continue" disabled={busy} onClick={revertToDefaults}>
+                    <SI.skip size={14} /> {S.camera.select.revertToDefaults}
+                  </button>
+                  <button className="s-btn s-qa-skip-continue" disabled={busy} onClick={proceedWithPicture}>
+                    <SI.skip size={14} /> {S.camera.select.proceedWithPicture}
+                  </button>
+                </div>
                 }
               </div>
             </div>
@@ -1406,7 +1425,13 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
   // ---------- Stage: applied ----------
   const changes = [];
   let measured = [];
-  if (result) {
+  if (result && !result.analysis) {
+    // "Proceed with this picture" path (CFC-04): no usable grey-card
+    // reading, operator moved on anyway -- nothing to measure or change,
+    // so say so plainly instead of a blank "What we found"/"changed" card.
+    measured.push(S.camera.applied.uncalibratedFound);
+    changes.push({ label: S.camera.applied.uncalibratedChangedLabel, sub: S.camera.applied.uncalibratedChanged });
+  } else if (result) {
     const { before, after, analysis, rejected } = result;
     const evd = analysis.evDelta;
     const warmLog = Math.log2(analysis.warmth);
@@ -1484,7 +1509,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
           </div>
           <h1 className="s-h1 s-h1--small">{S.camera.applied.title}</h1>
           <p className="s-lede">
-            {S.camera.applied.lede}
+            {result && !result.analysis ? S.camera.applied.ledeUncalibrated : S.camera.applied.lede}
           </p>
 
           {result && result.refreshFailed &&
