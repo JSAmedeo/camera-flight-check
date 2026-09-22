@@ -28,7 +28,7 @@ Stop and confirm with the user before:
 - Deleting files or directories that may contain user work (killing processes is fine; deleting their data is not)
 - Architectural changes (switching desktop shell, replacing the camera stack)
 - Changing settings **on the physical camera** beyond what the grey-card/QA flows themselves do
-- Force-pushing or rewriting history on the remote (repo: https://github.com/JSAmedeo/camera-flight-check, private). Normal commits/pushes on feature branches are fine; commit at meaningful checkpoints with descriptive messages. `main` holds field-validated states; feature work happens on branches (current: `nikon-support`)
+- Force-pushing or rewriting history on the remote (repo: https://github.com/JSAmedeo/camera-flight-check, private). Normal commits/pushes are fine; commit at meaningful checkpoints with descriptive messages. `main` holds field-validated states. `nikon-support` and `ui-revamp` were merged into `main` 2026-09-22 (field-tested end to end, including the grey-card escape hatch/flash-output fix) and are done. Day-to-day work now happens directly on `main`, one field-tested checkpoint at a time, unless something comes up big enough to need isolating on its own branch first (a call to make at the time, not a standing default)
 
 ## User Working Style
 
