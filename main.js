@@ -119,6 +119,13 @@ function defaultSettings() {
     // (see nearestValue/nearestShutter/nearestWb in simple-app-bundled.jsx),
     // so these don't need to be exact camera-vocabulary strings.
     cameraDefaults: { iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
+    // Camera Setting Bypass presets -- independent of cameraDefaults above
+    // (seeded from it once here, but not kept in sync; editing one doesn't
+    // change the other). A plain array like skipReasons/helpContacts, so it
+    // rides the existing settings:save/load path with no new IPC.
+    cameraPresets: [
+      { id: "baseline", name: "Baseline Default Settings", iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
+    ],
     // Field-tuned so the bundled guide matches a well-framed reference photo
     // (head ~2/5 down the frame, feet in the lower portion just above the
     // bottom) rather than the guide's native full-bleed proportions (scale

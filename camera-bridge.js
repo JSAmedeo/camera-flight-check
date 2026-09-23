@@ -122,6 +122,7 @@ class SimulatorCamera {
     this.mode = "simulator";
     this._assets = assetsDir;
     this._corrected = false;
+    this._detectCalls = 0;
     this._state = {
       model: "Canon EOS Rebel T7 (simulated)",
       serial: "SIM-000123",
@@ -141,6 +142,13 @@ class SimulatorCamera {
 
   async detect() {
     await sleep(1200);
+    this._detectCalls++;
+    if (process.env.CFC_SIM_DISCONNECTED) return { connected: false };
+    // Connects normally for the first N checks, then reports disconnected --
+    // for testing a mid-session drop (Lost Connection), not just "never found".
+    if (process.env.CFC_SIM_DISCONNECT_AFTER && this._detectCalls > Number(process.env.CFC_SIM_DISCONNECT_AFTER)) {
+      return { connected: false };
+    }
     return { connected: true, model: this._state.model, serial: this._state.serial };
   }
 

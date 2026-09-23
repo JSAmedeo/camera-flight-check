@@ -50,6 +50,21 @@ const SI = {
       <rect x="48" y="22" width="6" height="3" rx="1" fill="currentColor" />
     </svg>,
 
+  // Camera Setting Bypass affordance -- the plain camera glyph above, with a
+  // small gear badge overlapping its bottom-right corner (matches the
+  // reference icon the user supplied), so the button reads as "camera
+  // settings" rather than just "settings."
+  cameraGear: (p = {}) =>
+  <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
+      <path d="M8 18h9l4-6h22l4 6h9v32H8z" />
+      <circle cx="32" cy="34" r="11" />
+      <circle cx="32" cy="34" r="5" />
+      <g transform="translate(40,38) scale(0.62)" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+      </g>
+    </svg>,
+
   cap: (p = {}) =>
   <svg viewBox="0 0 64 64" width={p.size || 44} height={p.size || 44} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round">
       <circle cx="32" cy="32" r="20" strokeDasharray="3 4" />
@@ -436,7 +451,7 @@ function SettingsStrip({ s }) {
 // ============================================================
 // Top bar
 // ============================================================
-function SimpleTop({ openHelp, openSettings, step }) {
+function SimpleTop({ openHelp, openSettings, openBypass, step }) {
   const [simulated, setSimulated] = React.useState(false);
   React.useEffect(() => {
     if (cam) cam.mode().then((m) => setSimulated(m === "simulator")).catch(() => {});
@@ -457,6 +472,11 @@ function SimpleTop({ openHelp, openSettings, step }) {
       <SimpleSteps step={step} />
       <div className="s-top-actions">
         {simulated && <span className="s-sim-badge">{S.app.simulatorBadge}</span>}
+        {step === 1 &&
+        <button className="s-help-btn s-bypass-open-btn" onClick={openBypass}>
+          <SI.cameraGear size={16} /> {S.app.bypassButton}
+        </button>
+        }
         <button className="s-help-btn" onClick={openHelp}>
           <SI.help size={16} /> {S.app.getHelp}
         </button>
@@ -3121,6 +3141,419 @@ function SettingsPasswordGate({ correctPassword, onUnlock, onClose }) {
 
 }
 
+// Stand-in for CameraStats while nothing's connected yet -- keeps Current
+// Settings' row count/height identical to the real reading so the sections
+// below it (photo view, Presets) don't jump position when a camera connects.
+const BYPASS_STATS_PLACEHOLDER = { model: "—", mode: "—", aperture: "—", shutter: "—", iso: "—", wb: "—", quality: "—" };
+
+// ============================================================
+// Camera Setting Bypass -- quick camera diagnostics/adjustment for field
+// staff and helpdesk, reachable from Welcome without starting a check run
+// or unlocking admin Settings. Detects the camera, flags a non-M mode,
+// shows live settings, lets an operator push a manual value or a saved
+// preset straight to the camera, and lets presets be authored/edited here.
+// ============================================================
+function CameraBypassScreen({ settings, onSettingsChange, onClose }) {
+  const T = S.bypass;
+  const [detected, setDetected] = React.useState(null); // {connected, model, serial}
+  const [camState, setCamState] = React.useState(null); // live cam.settings() result
+  // Distinguishes "never found a camera yet" from "had one, it's gone now" --
+  // a real disconnect mid-session (unplugged cable) should read as Lost
+  // Connection, not the generic first-time not-found message.
+  const [everConnected, setEverConnected] = React.useState(false);
+  const [lastModel, setLastModel] = React.useState(null);
+  const [busy, setBusy] = React.useState(false);
+  const [busyLabel, setBusyLabel] = React.useState("");
+  const [camError, setCamError] = React.useState(null);
+  const [photo, setPhoto] = React.useState(null); // dataUrl of the last quick capture, if any
+  // Manual-adjust dropdowns, seeded from the live camera reading each refresh
+  const [draftIso, setDraftIso] = React.useState("");
+  const [draftShutter, setDraftShutter] = React.useState("");
+  const [draftAperture, setDraftAperture] = React.useState("");
+  const [draftWb, setDraftWb] = React.useState("");
+  // Presets edit locally (same staged-draft + explicit save pattern as
+  // SettingsScreen) rather than writing to disk on every keystroke.
+  const [presetsDraft, setPresetsDraft] = React.useState(settings.cameraPresets || []);
+  const [presetsSaved, setPresetsSaved] = React.useState(false);
+  // Only one preset is editable at a time -- its fields render as inputs,
+  // every other card shows plain (muted) text until Edit is tapped.
+  const [editingPresetId, setEditingPresetId] = React.useState(null);
+  // Current Settings (left column) and Manually Adjust Camera Settings
+  // (right column) are meant to bottom-align -- refs used further down,
+  // once settingsLoaded is computed, to measure and pin matching heights.
+  const currentSettingsRef = React.useRef(null);
+  const adjustSettingsRef = React.useRef(null);
+  // Take Photo button is meant to match the photo box's own rendered width,
+  // which is narrower than its flex wrapper (the box is aspect-ratio-limited
+  // and centered) -- refs used below with a ResizeObserver to copy the
+  // measured width onto the button (one-directional, so there's no
+  // read-then-write feedback loop like the bottom-alignment effect needs).
+  const photoBoxRef = React.useRef(null);
+  const takePhotoBtnRef = React.useRef(null);
+
+  const seedDrafts = (s) => {
+    setDraftIso((s && s.iso) || "");
+    setDraftShutter((s && s.shutter) || "");
+    setDraftAperture((s && s.aperture) || "");
+    setDraftWb((s && s.wb) || "");
+  };
+
+  const refresh = React.useCallback(async () => {
+    setBusy(true); setBusyLabel(T.checking); setCamError(null);
+    try {
+      if (!cam) { setCamError(S.camera.detect.unavailable); setDetected(null); setCamState(null); return; }
+      const d = await cam.detect();
+      setDetected(d);
+      if (!d.connected) { setCamState(null); return; }
+      setEverConnected(true);
+      setLastModel(d.model || null);
+      const s = await cam.settings();
+      setCamState(s);
+      seedDrafts(s);
+    } catch (e) {
+      setCamError(errText(e));
+      // A detect/settings call that throws (real hardware dropping mid-call,
+      // not just a clean {connected:false}) must still clear any stale
+      // "connected" state -- otherwise the old success row keeps rendering
+      // right alongside the new error, showing both at once.
+      setDetected({ connected: false });
+      setCamState(null);
+    } finally { setBusy(false); }
+  }, []);
+
+  React.useEffect(() => { refresh(); }, [refresh]);
+
+  const applyManual = async () => {
+    if (!camState) return;
+    setBusy(true); setBusyLabel(T.applying); setCamError(null);
+    try {
+      const plan = {};
+      if (draftIso && draftIso !== camState.iso) plan.iso = draftIso;
+      if (draftShutter && draftShutter !== camState.shutter) plan.shutter = draftShutter;
+      if (draftAperture && draftAperture !== camState.aperture) plan.aperture = draftAperture;
+      if (draftWb && draftWb !== camState.wb) plan.wb = draftWb;
+      if (Object.keys(plan).length) await cam.set(plan);
+      const s = await cam.settings();
+      setCamState(s);
+      seedDrafts(s);
+    } catch (e) {
+      setCamError(errText(e));
+    } finally { setBusy(false); }
+  };
+
+  // Preset values are free-typed (possibly with no camera connected at the
+  // time), so match each to the nearest value this camera actually reports
+  // -- same tolerant approach as the grey-card correction plan and the
+  // "Revert to default settings" escape hatch.
+  const applyPreset = async (preset) => {
+    if (!camState) return;
+    setBusy(true); setBusyLabel(T.applying); setCamError(null);
+    try {
+      const plan = {};
+      if (preset.iso) { const v = nearestValue(camState.isoValues, parseFloat(preset.iso)); if (v) plan.iso = v; }
+      if (preset.aperture) { const v = nearestValue(camState.apertureValues, parseFloat(preset.aperture)); if (v) plan.aperture = v; }
+      if (preset.shutter) { const v = nearestShutter(camState.shutterValues, preset.shutter); if (v) plan.shutter = v; }
+      if (preset.wb) { const v = nearestWb(camState.wbValues, preset.wb); if (v) plan.wb = v; }
+      if (Object.keys(plan).length) await cam.set(plan);
+      const s = await cam.settings();
+      setCamState(s);
+      seedDrafts(s);
+    } catch (e) {
+      setCamError(errText(e));
+    } finally { setBusy(false); }
+  };
+
+  const takePicture = async () => {
+    if (!camState) return;
+    setBusy(true); setBusyLabel(S.common.takingPhoto); setCamError(null);
+    try {
+      const p = await cam.capture();
+      setPhoto(p.dataUrl);
+    } catch (e) {
+      setCamError(errText(e));
+    } finally { setBusy(false); }
+  };
+
+  const updatePreset = (id, key, value) => {
+    setPresetsSaved(false);
+    setPresetsDraft((list) => list.map((p) => p.id === id ? { ...p, [key]: value } : p));
+  };
+  const addPreset = () => {
+    setPresetsSaved(false);
+    setPresetsDraft((list) => [...list, {
+      id: "preset-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6),
+      name: T.newPresetName, iso: "", shutter: "", aperture: "", wb: ""
+    }]);
+  };
+  const removePreset = (id) => {
+    setPresetsSaved(false);
+    setPresetsDraft((list) => list.filter((p) => p.id !== id));
+  };
+  const movePreset = (id, dir) => {
+    setPresetsSaved(false);
+    setPresetsDraft((list) => {
+      const i = list.findIndex((p) => p.id === id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= list.length) return list;
+      const next = [...list];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  };
+  const savePresets = async () => {
+    const next = { ...settings, cameraPresets: presetsDraft };
+    let result = next;
+    if (window.cfc && window.cfc.settings) {
+      try { result = await window.cfc.settings.save(next); } catch {}
+    }
+    onSettingsChange(result);
+    setPresetsSaved(true);
+  };
+
+  // Same three-state diagnosis as ScreenCamera's "shoot" stage: a populated
+  // ISO table means settings actually loaded; loaded but no WB value/list
+  // means the mode dial is on Auto (the camera locks WB there); nothing
+  // loaded at all is a real read failure, not a mode problem.
+  const settingsLoaded = camState && (camState.isoValues || []).length > 0;
+  const modeWarn = settingsLoaded && (camState.wb == null || !(camState.wbValues || []).length);
+  const readFail = camState && !settingsLoaded;
+  const checking = busy && !camState;
+  const isConnected = detected && detected.connected;
+  const everSeen = isConnected || everConnected;
+
+  // Current Settings and Adjust Settings need matching *bottom* edges, not
+  // matching heights -- they start at different Y positions (Current
+  // Settings sits below the connection status row; Adjust Settings has
+  // nothing above it), so equal heights alone leaves them offset by exactly
+  // that status row's height. No fixed CSS padding can account for this
+  // reliably across different OS font rendering/window scale either, so:
+  // measure each one's actual top and natural bottom, then stretch whichever
+  // one currently ends higher down to the lower of the two bottoms.
+  React.useLayoutEffect(() => {
+    const a = currentSettingsRef.current, b = adjustSettingsRef.current;
+    if (!a || !b) return;
+    a.style.minHeight = ""; b.style.minHeight = "";
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const targetBottom = Math.max(ra.bottom, rb.bottom);
+    a.style.minHeight = (targetBottom - ra.top) + "px";
+    b.style.minHeight = (targetBottom - rb.top) + "px";
+    // Depends on everything that can change what renders above Current
+    // Settings in the status section (the error/warning banners), not just
+    // settingsLoaded -- e.g. the "check the USB cable" banner only appears
+    // once the first detect() resolves as not-connected, well after mount,
+    // and that alone pushes Current Settings down without settingsLoaded
+    // ever changing (it was false before and stays false).
+  }, [settingsLoaded, busy, detected, camError, everConnected]);
+
+  // Keep the Take Photo button's width equal to the photo box's own
+  // rendered width (narrower than the flex wrapper it shares, since the box
+  // is aspect-ratio-limited and centered). A ResizeObserver reacts to any
+  // width change -- window resize, zoom, card size -- without needing an
+  // explicit dependency list the way the bottom-alignment effect above does.
+  React.useLayoutEffect(() => {
+    const box = photoBoxRef.current, btn = takePhotoBtnRef.current;
+    if (!box || !btn) return;
+    const sync = () => { btn.style.width = box.getBoundingClientRect().width + "px"; };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div className="s-info" onClick={onClose}>
+      <div className="s-settings-card s-settings-card--wide s-settings-card--bypass s-fadeup" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <button className="s-info-close" onClick={onClose} aria-label={S.common.close}>
+          <SI.close size={18} />
+        </button>
+        <h2 className="s-settings-title">{T.title}</h2>
+        <p style={{ margin: "0 0 10px", color: "var(--text-2)", fontSize: 12.5, lineHeight: 1.4 }}>{T.lede}</p>
+
+        <div className="s-settings-content-wrap">
+          <div className="s-settings-flex">
+            <div className="s-bypass-columns">
+
+              {/* Left half: photo/status/current settings -- short, fixed content */}
+              <div className="s-bypass-col s-settings-compact">
+                <section className="s-settings-section s-bypass-status-section">
+                  {/* One persistent box for every state (checking/connected/lost/
+                      never-found) -- the retry button lives inside it always, not
+                      just once a camera happens to be connected. Hidden while
+                      actively checking (nothing to retry mid-check); labeled
+                      "Check Connection" once a camera has been seen at all
+                      (connected or lost), vs. "Try again" before it ever has. */}
+                  <div className={`s-bypass-status-row ${checking || isConnected ? "" : "s-bypass-status-row--fail"}`}>
+                    <span className={`s-bypass-status-dot ${checking || isConnected ? "" : "s-bypass-status-dot--fail"}`} />
+                    <span className="s-bypass-status-text">
+                      {checking ? busyLabel :
+                      isConnected ? <><b>{T.connectedLabel}</b> — {detected.model}</> :
+                      everConnected ? <><b>{T.lostConnectionLabel}</b>{lastModel ? ` — ${lastModel}` : ""}</> :
+                      <b>{T.notConnectedLabel}</b>
+                      }
+                    </span>
+                    {!checking &&
+                    <button className="s-btn s-btn--ghost s-btn--sm" disabled={busy} onClick={refresh}>
+                      <SI.retake size={12} /> {everSeen ? T.checkConnection : T.tryAgain}
+                    </button>
+                    }
+                  </div>
+                  {camError &&
+                  <div className="s-cam-error">
+                    <SI.warn size={16} />
+                    <span>{camError}</span>
+                  </div>
+                  }
+                  {!busy && !camError && detected && !detected.connected &&
+                  <div className="s-cam-error">
+                    <SI.warn size={16} />
+                    <span>{everConnected ? T.lostConnectionBody : T.notFoundBody}</span>
+                  </div>
+                  }
+                  {readFail &&
+                  <div className="s-cam-warn">
+                    <SI.warn size={16} />
+                    <span>{T.readFailWarn}</span>
+                  </div>
+                  }
+                  {modeWarn &&
+                  <div className="s-cam-warn">
+                    <SI.warn size={16} />
+                    <span>{T.modeWarnBefore}<b>{T.modeWarnAuto}</b>{T.modeWarnMiddle}<b>{T.modeWarnDial}</b>{T.modeWarnAfter}</span>
+                  </div>
+                  }
+                </section>
+
+                {/* Always rendered (with placeholder dashes when nothing's
+                    loaded) rather than mounted only once connected -- letting
+                    this and Adjust Settings pop in/out shifted the photo view
+                    and Presets frame below every time connection state changed. */}
+                <section ref={currentSettingsRef} className="s-settings-section s-bypass-framed-section" style={{ flex: "0 0 auto" }}>
+                  <h3>{T.currentTitle}</h3>
+                  <CameraStats s={settingsLoaded ? camState : BYPASS_STATS_PLACEHOLDER} />
+                </section>
+
+                <div className="s-bypass-photo-wrap">
+                  <div ref={photoBoxRef} className="s-bypass-photo">
+                    {photo ?
+                    <img src={photo} alt="" /> :
+                    <div className="s-photo-placeholder">
+                      <SI.camera size={32} />
+                      <span>{T.photoPlaceholder}</span>
+                    </div>
+                    }
+                  </div>
+                  <button ref={takePhotoBtnRef} className="s-btn s-btn--primary s-btn--sm" disabled={busy || !settingsLoaded} onClick={takePicture}>
+                    <SI.shutter size={14} /> {S.common.takePhoto}
+                  </button>
+                </div>
+              </div>
+
+              {/* Right half: adjust settings + presets -- can grow tall */}
+              <div className="s-bypass-col s-settings-compact">
+              {/* Always rendered, disabled/empty until a camera is connected --
+                  see the matching note on Current Settings above. */}
+              <section ref={adjustSettingsRef} className="s-settings-section s-bypass-framed-section">
+                <h3>{T.adjustTitle}</h3>
+                <div className="s-form-row">
+                  <div className="s-field">
+                    <label>{T.isoLabel}</label>
+                    <select className="s-input" disabled={!settingsLoaded} value={draftIso} onChange={(e) => setDraftIso(e.target.value)}>
+                      {((camState && camState.isoValues) || []).map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div className="s-field">
+                    <label>{T.shutterLabel}</label>
+                    <select className="s-input" disabled={!settingsLoaded} value={draftShutter} onChange={(e) => setDraftShutter(e.target.value)}>
+                      {((camState && camState.shutterValues) || []).map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="s-form-row" style={{ marginTop: 8 }}>
+                  <div className="s-field">
+                    <label>{T.apertureLabel}</label>
+                    <select className="s-input" disabled={!settingsLoaded} value={draftAperture} onChange={(e) => setDraftAperture(e.target.value)}>
+                      {((camState && camState.apertureValues) || []).map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                  <div className="s-field">
+                    <label>{T.wbLabel}</label>
+                    <select className="s-input" disabled={!settingsLoaded} value={draftWb} onChange={(e) => setDraftWb(e.target.value)}>
+                      {((camState && camState.wbValues) || []).map((v) => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button className="s-btn s-btn--primary s-btn--sm" style={{ marginTop: 10 }} disabled={busy || !settingsLoaded} onClick={applyManual}>
+                  <SI.check size={14} /> {T.applyButton}
+                </button>
+              </section>
+
+              <section className="s-settings-section s-bypass-framed-section s-bypass-presets-section">
+                <h3>{T.presetsTitle}</h3>
+                <p style={{ margin: "0 0 8px", color: "var(--text-2)", fontSize: 12 }}>{T.presetsLede}</p>
+                <div className="s-bypass-presets-list">
+                  {presetsDraft.map((p, i) => {
+                    const editing = editingPresetId === p.id;
+                    return (
+                      <div key={p.id} className="s-bypass-preset-row">
+                        <div className="s-bypass-preset-card">
+                          <div className="s-bypass-preset-title">
+                            {editing ?
+                            <input className="s-input" value={p.name} placeholder={T.presetNamePlaceholder}
+                              onChange={(e) => updatePreset(p.id, "name", e.target.value)} /> :
+                            (p.name || T.presetNamePlaceholder)
+                            }
+                          </div>
+                          <div className="s-bypass-preset-grid">
+                            <div><b>{T.wbLabel}:</b> {editing ? <input value={p.wb} placeholder="Auto" onChange={(e) => updatePreset(p.id, "wb", e.target.value)} /> : (p.wb || "—")}</div>
+                            <div><b>{T.apertureLabel}:</b> {editing ? <input value={p.aperture} placeholder="7" onChange={(e) => updatePreset(p.id, "aperture", e.target.value)} /> : (p.aperture || "—")}</div>
+                            <div><b>{T.shutterLabel}:</b> {editing ? <input value={p.shutter} placeholder="1/125" onChange={(e) => updatePreset(p.id, "shutter", e.target.value)} /> : (p.shutter || "—")}</div>
+                            <div><b>{T.isoLabel}:</b> {editing ? <input value={p.iso} placeholder="400" onChange={(e) => updatePreset(p.id, "iso", e.target.value)} /> : (p.iso || "—")}</div>
+                          </div>
+                          <div className="s-bypass-preset-divider" />
+                          <div className="s-bypass-preset-actions">
+                            <button className="s-btn s-btn--ghost s-btn--sm" onClick={() => setEditingPresetId(editing ? null : p.id)}>
+                              {editing ? T.doneEditing : T.editPreset}
+                            </button>
+                            {editing && <>
+                              <button className="s-btn s-btn--ghost s-btn--sm" style={{ padding: 0, width: 24 }} disabled={i === 0} aria-label={T.moveUp} onClick={() => movePreset(p.id, -1)}>
+                                <SI.chevronUp size={12} />
+                              </button>
+                              <button className="s-btn s-btn--ghost s-btn--sm" style={{ padding: 0, width: 24 }} disabled={i === presetsDraft.length - 1} aria-label={T.moveDown} onClick={() => movePreset(p.id, 1)}>
+                                <SI.chevronDown size={12} />
+                              </button>
+                              <button className="s-btn s-btn--ghost s-btn--sm s-btn--danger" style={{ marginLeft: "auto" }} onClick={() => removePreset(p.id)}>
+                                {T.removePreset}
+                              </button>
+                            </>}
+                          </div>
+                        </div>
+                        <button className="s-bypass-preset-apply" disabled={busy || !settingsLoaded} onClick={() => applyPreset(p)}>
+                          {T.applyPreset}
+                        </button>
+                      </div>);
+
+                  })}
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 12, flex: "0 0 auto" }}>
+                  <button className="s-btn s-btn--ghost s-btn--sm" onClick={addPreset}>
+                    {T.addPreset}
+                  </button>
+                  <button className="s-btn s-btn--primary s-btn--sm" onClick={savePresets}>
+                    {T.savePresets}
+                  </button>
+                  {presetsSaved && <span style={{ color: "var(--pass)", fontSize: 13.5 }}>{T.presetsSaved}</span>}
+                </div>
+              </section>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>);
+
+}
+
 // ============================================================
 // Launch flash
 // ============================================================
@@ -3181,6 +3614,7 @@ function SimpleApp() {
     skipReasons: ["Running late", "Equipment issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
     cameraDefaults: { iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
+    cameraPresets: [{ id: "baseline", name: "Baseline Default Settings", iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" }],
     overlay: { ...DEFAULT_OVERLAY },
     rpsLaunchEnabled: true,
     rpsPath: "",
@@ -3193,6 +3627,7 @@ function SimpleApp() {
     calibrationDiagnosticsEnabled: true,
   });
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [bypassOpen, setBypassOpen] = React.useState(false);
   // Persists for the rest of the running session once the correct password
   // is entered -- closing and reopening Settings doesn't re-prompt; only
   // relaunching the app does.
@@ -3290,7 +3725,7 @@ function SimpleApp() {
           overflow: "hidden"
         }}>
           <div className="s-app">
-            <SimpleTop openHelp={() => setHelp(true)} openSettings={() => setSettingsOpen(true)} step={step} />
+            <SimpleTop openHelp={() => setHelp(true)} openSettings={() => setSettingsOpen(true)} openBypass={() => setBypassOpen(true)} step={step} />
             {renderScreen()}
             {help && <HelpModal onClose={() => setHelp(false)} settings={settings} />}
             {settingsOpen &&
@@ -3300,6 +3735,12 @@ function SimpleApp() {
               onUnlock={() => setSettingsUnlocked(true)}
               onSave={(next) => setSettings(next)}
               onClose={() => setSettingsOpen(false)} />
+            }
+            {bypassOpen &&
+            <CameraBypassScreen
+              settings={settings}
+              onSettingsChange={(next) => setSettings(next)}
+              onClose={() => setBypassOpen(false)} />
             }
             {skipPrompt &&
             <SkipReasonModal
