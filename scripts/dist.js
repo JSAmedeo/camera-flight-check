@@ -24,6 +24,7 @@ fs.cpSync(path.join(root, "camera-host", "bin", "Release"), stage, { recursive: 
 run(
   'npx electron-packager . "Camera Flight Check" --platform=win32 --arch=x64 --out=dist --overwrite ' +
   '--ignore="^/(dist|build|camera-host|\\.claude)" --ignore="__verify\\.html" ' +
+  '--icon="assets/icon.ico" ' +
   '--extra-resource="build/camera-host"'
 );
 

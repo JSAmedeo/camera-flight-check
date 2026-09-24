@@ -49,6 +49,17 @@ async function main() {
     description: "Camera pre-flight utility — daily station readiness check",
     exe: "Camera Flight Check.exe",
     setupExe: "Camera Flight Check Setup.exe",
+    // The Setup.exe's own icon. The desktop and Start Menu shortcuts Squirrel
+    // creates take their icon from the exe itself (embedded by
+    // electron-packager --icon in dist.js), so they're covered without doing
+    // anything here.
+    //
+    // No iconUrl on purpose: it only drives the Add-or-Remove-Programs entry,
+    // it has to be a URL resolvable ON THE TARGET MACHINE, and a file:// path
+    // to this build machine's dist folder would simply be missing everywhere
+    // else. Without it that one entry shows a generic icon. If that ever
+    // matters, host the .ico at a real https URL and set it here.
+    setupIcon: path.join(root, "assets", "icon.ico"),
     noMsi: true,
   });
   console.log("Installer: " + path.join(outDir, "Camera Flight Check Setup.exe"));

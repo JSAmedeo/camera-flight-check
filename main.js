@@ -514,6 +514,11 @@ function createWindow() {
     transparent: true,
     autoHideMenuBar: true,
     title: "Camera Flight Check",
+    // The window is frameless, so this never shows as a title-bar icon -- it's
+    // what Windows uses for the taskbar button and Alt+Tab. The exe's own
+    // embedded icon (electron-packager --icon) covers the desktop/Start Menu;
+    // without this one the running app still falls back to Electron's default.
+    icon: path.join(__dirname, "assets", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,

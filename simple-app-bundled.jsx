@@ -459,11 +459,12 @@ function SimpleTop({ openHelp, openSettings, openBypass, step }) {
   return (
     <div className="s-top">
       <div className="s-top-brand">
+        {/* The app icon, same artwork as the exe/desktop shortcut. It carries
+            its own rounded-square background, so .s-top-mark no longer draws
+            one -- see simple-styles.css. Sourced at 256px and scaled down so it
+            stays crisp at any Chromium zoom factor (gotcha #13). */}
         <div className="s-top-mark">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="white" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round">
-            <path d="M3 7h3.5l1.5-2h8l1.5 2H21v12H3z" />
-            <circle cx="12" cy="13" r="4.5" />
-          </svg>
+          <img src="assets/app-mark.png" alt="" width="48" height="48" />
         </div>
         <div>
           <div className="s-top-title">{S.app.title}</div>
@@ -650,8 +651,14 @@ function ScreenWelcome({ onStart, settings }) {
       <div className="s-body">
         <div className="s-screen s-fadeup">
           <h1 className="s-h1" style={{ marginTop: 8 }}>{S.welcome.title}</h1>
+          {/* The duration sits on its own line under the intro sentence. A
+              block span rather than a <br>, so it still wraps sensibly on a
+              narrow window instead of being forced to break in one fixed spot. */}
           <p className="s-lede">
-            {S.welcome.ledeBefore}<b>{S.welcome.ledeBold}</b>{S.welcome.ledeAfter}
+            {S.welcome.ledeIntro}
+            <span className="s-lede-line">
+              {S.welcome.ledeBefore}<b>{S.welcome.ledeBold}</b>{S.welcome.ledeAfter}
+            </span>
           </p>
 
           <div className="s-form">

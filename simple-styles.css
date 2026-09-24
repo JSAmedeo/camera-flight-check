@@ -128,13 +128,27 @@ button:focus-visible {
   align-items: center;
   gap: 14px;
 }
+/* Holds the app icon image. No background or radius of its own: the artwork
+   is already a rounded square, and drawing another behind it produced a
+   square-inside-a-square. The glow is kept but neutralised to a plain drop
+   shadow, since the old one was tinted to the orange gradient that used to
+   live here. */
+/* Sized to the image, not to the old 40px mark. An oversized grid item does
+   NOT centre -- it clamps to the start edge -- so a 48px image in a 40px box
+   put all 8px of overflow below and sat the mark 4px low against the title.
+   Matching the box to the image lets .s-top-brand's align-items:center do it. */
 .s-top-mark {
-  width: 40px; height: 40px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  width: 48px; height: 48px;
   display: grid; place-items: center;
-  color: white;
-  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.35);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
+}
+/* 48px, not 40px: the .ico artwork carries ~17% transparent margin, so a 40px
+   render produced a 33px visible square that read as smaller than the mark it
+   replaced. At 48px the coloured square measures ~40px, matching the old
+   footprint; the overflow is transparent. */
+.s-top-mark img {
+  width: 48px; height: 48px;
+  display: block;
 }
 .s-top-title {
   font-size: 16px;
@@ -266,6 +280,9 @@ button:focus-visible {
   margin: 0;
 }
 .s-lede b { color: var(--text); font-weight: 600; }
+/* Starts a new line inside the lede paragraph without forcing a hard break,
+   so the sentence can still wrap on its own if the window is narrow. */
+.s-lede-line { display: block; }
 .s-lede--compact { font-size: 16px; line-height: 1.4; }
 .s-lede--left { text-align: left; max-width: none; }
 

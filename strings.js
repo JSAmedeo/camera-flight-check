@@ -218,7 +218,11 @@ window.CFC_STRINGS = {
   // ---- screen 1: welcome / sign-in ----
   welcome: {
     title: "Let's get your camera ready",
-    ledeBefore: "We'll check a few things together before your shift starts. It takes ",
+    // Two sentences, each on its own line. ledeIntro is the first line; the
+    // three ledeBefore/Bold/After pieces make up the second (split only so the
+    // duration can be bold) and always start a new line.
+    ledeIntro: "We'll run through a checklist and calibrate your camera using the grey card.",
+    ledeBefore: "This will take ",
     ledeBold: "about 4 minutes",
     ledeAfter: ".",
     needsTitle: "What you'll need",
