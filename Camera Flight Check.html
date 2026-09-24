@@ -796,6 +796,10 @@
     gap: 28px;
     align-items: start;
   }
+  /* The right column stacks Manager Contacts over Additional Contacts. They
+     need this wrapper: as separate grid children the second one would wrap
+     into column 1, landing under Documentation. */
+  .s-help-config-col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
   .s-help-row-actions { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
   .s-help-row-actions .s-btn--sm:nth-child(1),
   .s-help-row-actions .s-btn--sm:nth-child(2) {
@@ -805,6 +809,35 @@
   /* Remove sits at the far right of the row, separated from the reorder
      controls on the left. */
   .s-help-row-actions .s-btn--danger { margin-left: auto; }
+
+  /* Auto-filled manager contacts (Help Config). Read-only by design -- the
+     location feed rewrites them on every launch -- so they're visually set
+     apart from the editable manual rows below and carry a badge saying so. */
+  /* The Help Config tab isn't .s-settings-compact, so fields outside an
+     .s-help-edit-row (the feed URL) would otherwise render at the full default
+     input size and tower over every row beneath them. */
+  .s-help-config-cols .s-field label { font-size: 10.5px; }
+  .s-help-config-cols .s-input { height: 28px; padding: 0 8px; font-size: 12.5px; }
+  .s-help-auto-note { font-size: 11.5px; color: var(--text-2); margin: -2px 0 8px; }
+  .s-help-auto-status { font-size: 11px; color: var(--dim); margin: 8px 0 10px; line-height: 1.45; }
+  .s-help-edit-row--auto { position: relative; border-style: dashed; }
+  .s-help-edit-row--auto .s-input {
+    /* readOnly inputs still look editable otherwise; dim them so nobody
+       tries to type into a field the next refresh would overwrite. */
+    background: var(--card);
+    color: var(--text-2);
+    cursor: default;
+  }
+  /* Same pill recipe as .s-sim-badge, in the Contacts column's green rather
+     than the simulator's amber. */
+  .s-help-auto-badge {
+    position: absolute; top: 10px; right: 12px;
+    padding: 2px 8px; border-radius: var(--radius-pill);
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    background: rgba(var(--btn-primary-rgb), 0.14);
+    color: var(--btn-primary);
+    border: 1px solid rgba(var(--btn-primary-rgb), 0.4);
+  }
 
   /* Welcome screen's "what you'll need" list — one box, thin row dividers,
      rather than a separate card per item (reads as cluttered at only 4 items). */

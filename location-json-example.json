@@ -1,0 +1,112 @@
+{
+    "id": "23142",
+    "recordtype": "customrecord_tnp_mall_list",
+    "columns": {
+      "isinactive": false,
+      "custrecord_tnp_location_mall_name": "Pacific City",
+      "name": "1570",
+      "address1": "21010 Pacific Coast Hwy",
+      "city": "Huntington Beach",
+      "state": "CA",
+      "zip": "92648",
+      "country": "US",
+      "timezone": {
+        "name": "(GMT-08:00) Pacific Time (US & Canada)",
+        "internalid": "America/Los_Angeles"
+      },
+      "custrecord_tnp_location_region": {
+        "name": "Region 07",
+        "internalid": "10"
+      },
+      "custrecord_tnp_location_district": {
+        "name": "District 74",
+        "internalid": "76"
+      },
+      "custentity_partner_contract_status": {
+        "name": "Signed",
+        "internalid": "1"
+      },
+      "parent": {
+        "name": "Centennial Real Estate",
+        "internalid": "3869"
+      },
+      "custrecord_tnp_mall_list_md_first_name": "Jen",
+      "custrecord_tnp_mall_list_md_last_name": "Williams",
+      "district_manager": {
+        "name": "Nneka Hood",
+        "internalid": "2382330"
+      },
+      "dm_email": "nhood@cherryhillprograms.com",
+      "dm_phone": "(818) 770-5419",
+      "custrecord_tnp_mall_list_santa_opening_d": "11/21/2026",
+      "custrecord_tnp_mall_list_ly_santa_sales": 67827.53,
+      "custrecord_previous_sales_contract_net": 73214.56,
+      "custrecord_tnp_ts_pos": 1,
+      "custrecord_tnp_ts_casetype": "ELF",
+      "opening_date_verified": false,
+      "custrecord_tnp_mall_list_regional": {
+        "name": "Pamela Baraconi",
+        "internalid": "8630"
+      },
+      "rm_phone": "(720) 471-6890",
+      "rm_email": "pbaraconi@cherryhillprograms.com",
+      "custrecord_tnp_ts_printertype": "DS620",
+      "custrecord_tnp_ts_emv": {
+        "name": "Yes",
+        "internalid": "2"
+      },
+      "custrecord56": {
+        "name": "Centennial Real Estate : Pacific City : Jen Williams",
+        "internalid": "1201729"
+      },
+      "custentity_tnp_partner_primary_contact": {
+        "name": "Centennial Real Estate : Pacific City : Jen Williams",
+        "internalid": "1201729"
+      },
+      "custrecord_mdname": "Jen Williams",
+      "custrecord_mdlm_email": "jlwilliams@CentennialREC.com",
+      "custrecord_mdfname": "Jen",
+      "custrecord_mdlname": "Williams",
+      "custrecord_tnp_mall_list_tier": "3",
+      "custrecordpgiphotos2": false,
+      "latitude": 33.655634,
+      "longitude": -117.998755,
+      "custrecord_tnp_mall_list_sales_tax_rate": 7.75,
+      "subsidiary": "CHP-USA",
+      "custentity_partner_operates_bunny_season": {
+        "name": "No",
+        "internalid": "2"
+      },
+      "custrecord_drug_testing_required": {
+        "name": "No",
+        "internalid": "2"
+      },
+      "custrecord_santa_agreement_type": {
+        "name": "Fixed-Percent",
+        "internalid": "3"
+      },
+      "custrecord_incremental_cost_responsibili": {
+        "name": "CHP",
+        "internalid": "2"
+      },
+      "custrecord_calculation_basis": {
+        "name": "perLocation",
+        "internalid": "2"
+      },
+      "custrecord_other_contribution_details": "The Galleria at Fort Lauderdale to be invoiced by 2/15/26 for S25 Only - Up to 12k.  Deduct from Commissions if not PAID immediately.",
+      "custrecord_chp_contribution_amount": 1,
+      "custrecord_client_supplies_santa_char": false,
+      "custrecord_tnp_mall_list_partner": {
+        "name": "Centennial Real Estate : Pacific City",
+        "internalid": "1201722"
+      },
+      "custentity_chp_business_development": {
+        "name": "Pacific City",
+        "internalid": "1173"
+      },
+      "custrecord_minimum_wage": 16,
+      "custrecord_tnp_mall_list_costume": "CHP-Traditional",
+      "custrecord_tnp_mall_list_gift_card": false,
+      "shipping_address": "21010 Pacific Coast Hwy\nHuntington Beach CA 92648\nUnited States"
+    }
+  },

@@ -23,3 +23,7 @@ sessions/
 # NOTE: camera-host/lib/ (digiCamControl DLLs + EDSDK + VC runtimes) and vendor/
 # (React/Babel/Geist) are vendored ON PURPOSE — they aren't on any package
 # registry and the build needs them. Do not ignore them.
+
+# Full live location feed sample (2.3MB) -- contains sales figures, contract
+# terms and commission notes. Kept locally as a test fixture, never committed.
+full-location-json-example.json

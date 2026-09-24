@@ -22,6 +22,14 @@ contextBridge.exposeInMainWorld("cfc", {
     pickFolder: () => ipcRenderer.invoke("settings:pickFolder"),
     pickImage: () => ipcRenderer.invoke("settings:pickImage"),
     pickDocFile: () => ipcRenderer.invoke("settings:pickDocFile"),
+    // Main pushes a fresh settings payload after a successful location
+    // directory refresh. Returns an unsubscribe rather than exposing
+    // ipcRenderer itself, so the renderer can't reach arbitrary channels.
+    onChanged: (cb) => {
+      const handler = (_e, next) => cb(next);
+      ipcRenderer.on("settings:changed", handler);
+      return () => ipcRenderer.removeListener("settings:changed", handler);
+    },
   },
   help: {
     openDoc: (doc) => ipcRenderer.invoke("help:openDoc", doc),

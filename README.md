@@ -51,7 +51,9 @@ main.js / preload.js          Electron main process, window + IPC surface
 camera-bridge.js              spawns the camera helper or the built-in simulator
 camera-host/                  .NET 4.8 x86 console exe that talks to the camera
                                (Canon EDSDK + Nikon PTP via digiCamControl)
-assets/                       bundled images (framing guide, tutorial photos, malls.csv)
+assets/                       bundled images (framing guide, tutorial photos)
+help-feed.js                  location directory: fetches mall names + manager
+                               contacts, caches them for offline use
 vendor/                       vendored React/Babel/Geist — fully offline app,
                                no CDN dependencies
 scripts/                      build (dist.js) and packaging (package.js) pipeline

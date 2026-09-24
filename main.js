@@ -1,12 +1,13 @@
 // Camera Flight Check — Electron main process.
 // Opens the check UI as a frameless-feeling kiosk-style desktop window.
 
-const { app, BrowserWindow, globalShortcut, screen, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, globalShortcut, screen, ipcMain, dialog, shell, net } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
 const { spawn } = require("child_process");
 const { createCamera } = require("./camera-bridge");
+const helpFeed = require("./help-feed");
 
 const VIDEO_EXTS = [".mp4", ".mov", ".avi", ".wmv", ".mkv", ".m4v", ".webm"];
 
@@ -64,31 +65,40 @@ function pruneCalibrationDiagnostics() {
 // other handlers (e.g. runs:save below) always see the current value.
 let settings = null;
 
-// Camera computers are named MALL####-Camera. The #### is looked up against
-// assets/malls.csv (number,name) to show a friendly location name. No match
-// on either the hostname pattern or the CSV -> caller falls back to raw text.
-function loadMallMap() {
-  const map = {};
-  try {
-    const text = fs.readFileSync(path.join(__dirname, "assets", "malls.csv"), "utf8");
-    text.split(/\r?\n/).forEach((line, i) => {
-      if (i === 0 || !line.trim()) return; // skip header + blank lines
-      const idx = line.indexOf(",");
-      if (idx < 0) return;
-      const number = line.slice(0, idx).trim();
-      const name = line.slice(idx + 1).trim();
-      if (number && name) map[number] = name;
-    });
-  } catch {}
-  return map;
+// Camera computers are named MALL####-Camera. Only the number comes from the
+// hostname -- the friendly mall name is resolved from the location directory
+// (help-feed.js), which replaced the hand-maintained assets/malls.csv.
+function parseLocationFromHostname(hostname) {
+  const m = /^MALL(\d+)-Camera$/i.exec(hostname || "");
+  return m ? m[1] : null;
 }
 
-function parseLocationFromHostname(hostname, mallMap) {
-  const m = /^MALL(\d+)-Camera$/i.exec(hostname || "");
-  if (!m) return { number: null, name: null };
-  const number = m[1];
-  return { number, name: mallMap[number] || null };
+// Where location-directory.json lives, most-preferred first.
+//
+// Field stations run the portable build, so the directory sits in the same
+// folder as the exe: it travels with the deploy, survives a Windows profile
+// being rebuilt, and can be pre-seeded by dropping a copy into the folder
+// before handing the station over -- which is how a site with no connectivity
+// on setup day gets its managers and mall name.
+//
+// userData stays as a fallback for when that folder isn't writable (Program
+// Files, a locked share, a UNC path) and as the only location in dev, where
+// the "exe" is electron.exe inside node_modules and must never be written to.
+function locationDirectoryDirs() {
+  const userData = app.getPath("userData");
+  if (!app.isPackaged) return [userData];
+  return [path.dirname(app.getPath("exe")), userData];
 }
+
+// The location directory, read once at startup and replaced in place when a
+// background refresh succeeds. null means this station has never completed a
+// fetch -- everything downstream degrades to "no mall name, no auto contacts"
+// rather than failing.
+let locationDirectory = null;
+// Derived, never persisted: what the last refresh attempt did. Surfaced in the
+// Settings screen so IT can tell "never fetched" from "fetched, but this
+// location isn't in the feed".
+let helpAutoStatus = { lastAttemptAt: null, lastError: null };
 
 function defaultSettings() {
   return {
@@ -139,12 +149,35 @@ function defaultSettings() {
     rpsLaunchEnabled: true,
     rpsPath: "C:\\CentricsRPSClient\\bin\\CentricsRPSClient.exe",
     rpsAppName: "RPS",
-    // Seeded with the same contacts the app shipped with before this was
-    // admin-editable, so Need Help never renders empty out of the box.
+    // Seeded so Need Help never renders empty out of the box. The District
+    // Manager that used to sit here as a hand-typed placeholder is gone --
+    // both managers are auto-filled from the location directory now (see
+    // helpAuto below). Anything in this list is a manual entry, always.
     helpContacts: [
-      { title: "District Manager", description: "", phone: "(xxx) xxx-xxxx", email: "" },
       { title: "Technical Support", description: "", phone: "(855) 925-4546", email: "" },
     ],
+    // Regional/district manager contacts pulled from the company location
+    // feed and matched to this station's location number. They're derived at
+    // load time, never stored in helpContacts, so a manager change at source
+    // reaches the venue with nobody touching anything -- IT is the admin here
+    // and isn't on site. The two switches only control whether each contact is
+    // shown; turning one off doesn't delete anything, and IT can still add a
+    // manual contact labeled "District Manager" if they want one.
+    helpAuto: {
+      // {season} is substituted at fetch time -- the feed is published per
+      // season (S2026 = Santa 2026, B2027 = Bunny 2027), so the URL changes
+      // twice a year on its own. See currentSeasonCode() in help-feed.js.
+      feedUrl: "https://db0.cherryhillprograms.com:8090/atlaslist2?season={season}",
+      // Blank = work the season out from today's date. Set this only to force
+      // a specific one (a season running long, a one-off backfill).
+      seasonOverride: "",
+      fetchRegional: true,
+      fetchDistrict: true,
+      // One-time cleanup of the old hand-typed placeholder on stations that
+      // already have it saved -- changing the default above does nothing for
+      // them. See setupSettings().
+      placeholderRemoved: false,
+    },
     // Seeded so the two docs every station needs (printer media loading,
     // RPS setup/training) are available out of the box, same as the
     // contacts above -- admins can rename, replace, or remove them.
@@ -177,7 +210,7 @@ function defaultSettings() {
 function mergeSettings(saved, defaults) {
   defaults = defaults || defaultSettings();
   const merged = { ...defaults, ...saved };
-  for (const key of ["location", "cameraLimits", "cameraDefaults", "overlay", "paths"]) {
+  for (const key of ["location", "cameraLimits", "cameraDefaults", "overlay", "paths", "helpAuto"]) {
     merged[key] = { ...defaults[key], ...(saved[key] || {}) };
   }
   return merged;
@@ -191,14 +224,14 @@ function loadSettings() {
   let saved = {};
   try { saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8")); } catch {}
   const defaults = defaultSettings();
-  // Auto-fill location from the hostname + mall CSV only when nothing has
-  // been saved yet -- once an admin has saved a location (even one that
-  // happens to match what auto-detect would produce), it's never silently
-  // overwritten again on a later launch.
-  const hasSavedLocation = saved.location && (saved.location.number || saved.location.name);
-  if (!hasSavedLocation) {
-    const detected = parseLocationFromHostname(os.hostname(), loadMallMap());
-    defaults.location = { ...defaults.location, number: detected.number || "", name: detected.name || "" };
+  // Auto-fill the location NUMBER from the hostname only when nothing has been
+  // saved yet -- once an admin has saved one (even one that happens to match
+  // what auto-detect would produce), it's never silently overwritten again.
+  // The name isn't part of this test any more: it's normally left blank and
+  // resolved from the location directory on every load (resolveLocationName),
+  // so treating a blank name as "nothing saved" would re-detect forever.
+  if (!(saved.location && saved.location.number)) {
+    defaults.location = { ...defaults.location, number: parseLocationFromHostname(os.hostname()) || "" };
   }
   return mergeSettings(saved, defaults);
 }
@@ -209,19 +242,73 @@ function saveSettings(partial) {
   return settings;
 }
 
+// Everything settings:load attaches on top of the persisted settings. All of
+// it is derived fresh per call and none of it is ever written back -- see the
+// strip in settings:save, which has to list every key added here.
+function settingsPayload() {
+  return {
+    ...settings,
+    hostname: os.hostname(),
+    // The raw {mall, rm, dm} record for this station, or null. The renderer
+    // turns it into contact cards, because the role titles are operator-facing
+    // copy and all of that lives in strings.js (which main can't require).
+    helpAutoRecord: helpFeed.lookupRecord(locationDirectory, settings.location.number),
+    locationNameResolved: helpFeed.resolveLocationName(settings, locationDirectory),
+    helpAutoStatus: {
+      ...helpAutoStatus,
+      hasDirectory: !!locationDirectory,
+      fetchedAt: locationDirectory ? locationDirectory.fetchedAt : null,
+      // Which season the URL template resolved to, and the address that
+      // produces -- shown in Settings so IT can see what's being asked for
+      // without having to work the date rule out in their head.
+      season: helpFeed.currentSeasonCode(),
+      resolvedUrl: helpFeed.resolveFeedUrl(settings),
+    },
+  };
+}
+
 function setupSettings() {
   settings = loadSettings();
+  const found = helpFeed.readDirectoryFromFirst(locationDirectoryDirs());
+  locationDirectory = found.directory;
+  if (locationDirectory) console.log("[main] location directory loaded from " + found.dir);
 
-  // hostname is attached fresh each load (not persisted) so the Welcome
-  // screen can fall back to something readable if hostname parsing or the
-  // mall CSV lookup ever comes up empty.
-  ipcMain.handle("settings:load", () => ({ ...settings, hostname: os.hostname() }));
+  // One-time cleanup of the hand-typed "District Manager" placeholder this app
+  // used to ship, now that the real one is auto-filled. Matched EXACTLY -- a
+  // contact IT actually filled in (or renamed) is left alone, because deleting
+  // a real support number would be far worse than leaving a duplicate.
+  if (!settings.helpAuto.placeholderRemoved) {
+    const before = settings.helpContacts.length;
+    settings.helpContacts = settings.helpContacts.filter((c) => !(
+      c && c.title === "District Manager" && c.phone === "(xxx) xxx-xxxx" && !c.description && !c.email
+    ));
+    settings.helpAuto.placeholderRemoved = true;
+    // Only persist when something was actually removed. On a fresh install
+    // there's no settings.json yet, and writing one here would freeze the
+    // hostname-detected location number that loadSettings re-derives each
+    // launch until an admin saves for the first time.
+    if (settings.helpContacts.length !== before) {
+      try {
+        fs.writeFileSync(settingsFile(), JSON.stringify(settings, null, 2));
+        console.log("[main] removed the shipped District Manager placeholder contact");
+      } catch (e) {
+        console.log("[main] could not persist placeholder cleanup:", e.message);
+      }
+    }
+  }
+
+  ipcMain.handle("settings:load", () => settingsPayload());
   ipcMain.handle("settings:save", (_e, partial) => {
-    // `hostname` is attached by settings:load for display only -- the
-    // renderer's draft state carries it along, but it must never be
-    // persisted (it's re-attached fresh from os.hostname() on every load).
-    const { hostname, ...toSave } = partial || {};
-    return saveSettings(toSave);
+    // These are attached by settings:load for display only -- the renderer's
+    // draft state carries them along, but none may ever be persisted (each is
+    // re-derived on every load, so a stored copy would silently go stale).
+    const { hostname, helpAutoRecord, locationNameResolved, helpAutoStatus: _s, ...toSave } = partial || {};
+    saveSettings(toSave);
+    // Return the full payload, not the bare persisted object -- the renderer
+    // assigns this straight into its settings state, so handing back a copy
+    // without the derived fields would blank the mall name and the auto
+    // contacts until the next launch.
+    return settingsPayload();
   });
   ipcMain.handle("settings:hostname", () => os.hostname());
   // Pass the owning BrowserWindow so the native dialog is properly modal to
@@ -490,11 +577,38 @@ function createWindow() {
   return win;
 }
 
+// Background refresh of the location directory. Deliberately fire-and-forget
+// and deliberately last: nothing on the operator's path waits for the network,
+// and a station whose router is down just keeps using the directory it already
+// has. Deferred past first paint so parsing a couple of MB of JSON on the main
+// process can't stutter the Welcome screen.
+function startDirectoryRefresh(win) {
+  const url = helpFeed.resolveFeedUrl(settings);
+  if (!url) return; // feature dormant until an admin sets the feed URL
+  const begin = () => helpFeed.startRefresh({
+    net,
+    url,
+    dirs: locationDirectoryDirs(),
+    hasDirectory: !!locationDirectory,
+    log: (msg) => console.log("[main] " + msg),
+    onStatus: (status) => { helpAutoStatus = status; },
+    onUpdated: (directory) => {
+      locationDirectory = directory;
+      // Push the refreshed values at the renderer: it loads settings once on
+      // mount and never again, so without this a station's first successful
+      // fetch wouldn't show its mall name or managers until the next launch.
+      if (win && !win.isDestroyed()) win.webContents.send("settings:changed", settingsPayload());
+    },
+  });
+  win.webContents.once("did-finish-load", () => setTimeout(begin, 1500));
+}
+
 app.whenReady().then(() => {
   setupSettings();
   pruneCalibrationDiagnostics();
   setupCamera();
-  createWindow();
+  const win = createWindow();
+  startDirectoryRefresh(win);
 });
 
 // Closing via the window's X icon skips ScreenDone's own release-before-RPS

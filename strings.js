@@ -99,7 +99,7 @@ window.CFC_STRINGS = {
     overlayTakePhoto: "Take Reference Photo",
     rpsPathLabel: "RPS executable path",
     rpsPathPlaceholder: "C:\\CentricsRPSClient\\bin\\CentricsRPSClient.exe",
-    helpTitle: "Contacts",
+    helpTitle: "Additional Contacts",
     helpFieldTitle: "Title",
     helpFieldDescription: "Description",
     helpFieldPhone: "Phone",
@@ -119,6 +119,41 @@ window.CFC_STRINGS = {
     helpMoveUp: "Move up",
     helpMoveDown: "Move down",
     helpChangeOrder: "Change Order",
+    // Auto-filled manager contacts (Help Config → Contacts)
+    helpAutoTitle: "Manager Contacts",
+    helpAutoNote: "These are filled in for this location and stay up to date on their own.",
+    helpAutoRegionalToggle: "Fetch regional manager contact info",
+    helpAutoDistrictToggle: "Fetch district manager contact info",
+    helpAutoBadge: "Auto-filled",
+    helpAutoUrlLabel: "Location data web address",
+    helpAutoUrlPlaceholder: "https://example.com/locations.json?season={season}",
+    // {season} in the address is filled in automatically: S = Santa, B = Bunny,
+    // plus the year (S2026 = Santa 2026). Santa runs August through January,
+    // Bunny February through July.
+    helpAutoSeasonLabel: "Season",
+    helpAutoSeasonAuto: "Now using {season} (worked out from today's date)",
+    helpAutoSeasonOverrideLabel: "Use a different season",
+    helpAutoSeasonOverridePlaceholder: "Automatic",
+    helpAutoSeasonForced: "Forced to {season}. Clear this box to go back to automatic.",
+    helpAutoResolvedUrl: "Asking for: {url}",
+    helpAutoStatusNever: "No location data yet — this station hasn't been able to reach the web address.",
+    helpAutoStatusOk: "Location data updated {when}.",
+    helpAutoStatusNoUrl: "Add a web address above to turn this on.",
+    helpAutoStatusNoNumber: "Set a location number on the General tab to match this station.",
+    helpAutoStatusNoRecord: "Location {number} isn't in the location data yet.",
+    helpAutoStatusNoManagers: "No managers are listed for this location yet.",
+    helpAutoStatusOff: "Turned off — this contact won't be shown.",
+    helpAutoLastError: "Last try failed: {error}",
+  },
+
+  // ---- auto-filled manager contacts (shown in the Need Help popup) ----
+  // Titles read as the role, not the person, so an operator scans for who to
+  // call rather than for a name they may not know. {name} · {area} sits under
+  // it as the description line.
+  helpAuto: {
+    regionalTitle: "Regional Manager",
+    districtTitle: "District Manager",
+    description: "{name} · {area}",
   },
 
   // ---- top bar ----

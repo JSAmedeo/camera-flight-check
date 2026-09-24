@@ -630,7 +630,11 @@ function ScreenWelcome({ onStart, settings }) {
   const timeText = now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
   const loc = settings.location || {};
+  // locationNameResolved comes from the location directory (main resolves it
+  // per load, preferring the feed's mall name unless an admin typed their own).
+  // It falls back through the saved name, then the bare number, then hostname.
   const locationText =
+  settings.locationNameResolved ||
   loc.name ||
   (loc.number ? fmt(S.app.locationNumberOnly, { number: loc.number }) : null) ||
   settings.hostname ||
@@ -2359,8 +2363,43 @@ function ScreenDone({ onRestart, run, settings }) {
 // ============================================================
 // Help modal
 // ============================================================
+
+// Turns the location directory's record for this station (attached to the
+// settings payload by main as `helpAutoRecord`) into contact cards. Built here
+// rather than in main because the role titles are operator-facing copy and all
+// of that lives in strings.js, which the main process can't require.
+//
+// These are derived on every render, never stored in helpContacts -- that's
+// what lets a manager change at source reach the venue with nobody editing
+// anything. A card is only produced when the feed gave us a name and at least
+// one way to reach them; ~3% of venues genuinely have no regional or district
+// manager listed, and an empty card is worse than no card.
+function buildAutoContacts(settings) {
+  const record = settings.helpAutoRecord;
+  const auto = settings.helpAuto || {};
+  if (!record) return [];
+  const make = (key, p, title) => {
+    if (!p || !p.name) return null;
+    return {
+      title,
+      description: p.area ? fmt(S.helpAuto.description, { name: p.name, area: p.area }) : p.name,
+      phone: p.phone || "",
+      email: p.email || "",
+      auto: true,
+      autoKey: key,
+    };
+  };
+  return [
+    auto.fetchRegional !== false ? make("regional", record.rm, S.helpAuto.regionalTitle) : null,
+    auto.fetchDistrict !== false ? make("district", record.dm, S.helpAuto.districtTitle) : null,
+  ].filter(Boolean);
+}
+
 function HelpModal({ onClose, settings }) {
-  const contacts = settings.helpContacts || [];
+  // Auto-filled managers sit above the manual entries. No "auto-filled" badge
+  // here on purpose -- an operator reaching for this screen needs to call
+  // someone, and where the number came from is an admin concern.
+  const contacts = [...buildAutoContacts(settings), ...(settings.helpContacts || [])];
   const docs = settings.helpDocs || [];
 
   const openDoc = async (doc) => {
@@ -2480,6 +2519,40 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
   };
 
   const numOrNull = (v) => v === "" ? null : Number(v);
+
+  // What the operator will actually see, built from the live settings (not the
+  // draft) since the record only changes when main refreshes it. Toggling a
+  // switch still updates the preview immediately, because buildAutoContacts
+  // reads helpAuto from whatever object it's handed.
+  const autoPreview = buildAutoContacts({ ...settings, helpAuto: draft.helpAuto });
+  // Explains why the preview is empty when it is. Ordered most-actionable
+  // first: no URL to fetch from, no number to match, nothing fetched yet,
+  // fetched but this location isn't in it, in it but has no managers listed.
+  const autoStatus = settings.helpAutoStatus || {};
+  // Which season the address resolves to. Shown whether or not a fetch has
+  // happened, since it's the thing most likely to need checking at a
+  // season changeover.
+  const seasonText = draft.helpAuto.feedUrl
+    ? (draft.helpAuto.seasonOverride
+      ? fmt(T.helpAutoSeasonForced, { season: draft.helpAuto.seasonOverride })
+      : fmt(T.helpAutoSeasonAuto, { season: autoStatus.season || "" }))
+    : "";
+  const autoStatusText = (() => {
+    if (!draft.helpAuto.feedUrl) return T.helpAutoStatusNoUrl;
+    if (!draft.location.number) return T.helpAutoStatusNoNumber;
+    if (!autoStatus.hasDirectory) {
+      return autoStatus.lastError
+        ? T.helpAutoStatusNever + " " + fmt(T.helpAutoLastError, { error: autoStatus.lastError })
+        : T.helpAutoStatusNever;
+    }
+    if (!settings.helpAutoRecord) return fmt(T.helpAutoStatusNoRecord, { number: draft.location.number });
+    if (!autoPreview.length && draft.helpAuto.fetchRegional !== false && draft.helpAuto.fetchDistrict !== false) {
+      return T.helpAutoStatusNoManagers;
+    }
+    return fmt(T.helpAutoStatusOk, {
+      when: autoStatus.fetchedAt ? new Date(autoStatus.fetchedAt).toLocaleString() : "",
+    });
+  })();
 
   const pickPath = async (key) => {
     if (!(window.cfc && window.cfc.settings)) return;
@@ -2655,7 +2728,11 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
                 <input
                   className="s-input"
                   value={draft.location.name}
-                  placeholder={T.locationNameNotFound} // name only ever comes from the mall CSV lookup
+                  // Normally left blank: the name is looked up from the location
+                  // directory by number, so it tracks a rename at source. The
+                  // looked-up value shows as the placeholder (same idea as the
+                  // hostname on the number field); typing here overrides it.
+                  placeholder={settings.locationNameResolved || T.locationNameNotFound}
                   onChange={(e) => setField("location", "name", e.target.value)} />
               </div>
             </div>
@@ -3016,6 +3093,77 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
             )}
           </section>
 
+          {/* Both contact sections share the right-hand column: the auto-filled
+              managers on top, the admin's own additions directly beneath. They
+              have to be wrapped -- .s-help-config-cols is a two-column grid, so
+              a third direct child would wrap under Documentation on the left. */}
+          <div className="s-help-config-col">
+          <section className="s-settings-section">
+            <h3>{T.helpAutoTitle}</h3>
+            <div className="s-help-auto-note">{T.helpAutoNote}</div>
+            <label className="s-settings-toggle" style={{ marginTop: 0 }}>
+              <input
+                type="checkbox"
+                checked={draft.helpAuto.fetchRegional !== false}
+                onChange={(e) => setField("helpAuto", "fetchRegional", e.target.checked)} />
+              {T.helpAutoRegionalToggle}
+            </label>
+            <label className="s-settings-toggle" style={{ marginTop: 0 }}>
+              <input
+                type="checkbox"
+                checked={draft.helpAuto.fetchDistrict !== false}
+                onChange={(e) => setField("helpAuto", "fetchDistrict", e.target.checked)} />
+              {T.helpAutoDistrictToggle}
+            </label>
+            <div className="s-field" style={{ marginTop: 10 }}>
+              <label>{T.helpAutoUrlLabel}</label>
+              {/* Masked rather than shown as text: it's an internal company
+                  address and shouldn't be readable off a kiosk screen, even
+                  with Settings unlocked. Still editable, and the season line
+                  below confirms what's actually being asked for. There's
+                  deliberately no reveal toggle. */}
+              <input
+                className="s-input"
+                type="password"
+                autoComplete="off"
+                value={draft.helpAuto.feedUrl || ""}
+                placeholder={T.helpAutoUrlPlaceholder}
+                onChange={(e) => setField("helpAuto", "feedUrl", e.target.value)} />
+            </div>
+            {/* No season-override field on purpose -- the date rule handles the
+                Santa/Bunny changeover on its own. helpAuto.seasonOverride and
+                resolveFeedUrl() still honor an override written into
+                settings.json directly, so the UI can come back cheaply. */}
+            <div className="s-help-auto-status">{seasonText}{autoStatusText ? " " + autoStatusText : ""}</div>
+            {/* Read-only preview of what the operator will actually see. These
+                aren't editable: the feed overwrites them on every launch, so an
+                edit here would quietly vanish. Needs different details for a
+                venue? Turn the switch off and add a manual contact below. */}
+            {autoPreview.map((c) =>
+            <div key={c.autoKey} className="s-help-edit-row s-help-edit-row--auto">
+                <div className="s-help-auto-badge">{T.helpAutoBadge}</div>
+                <div className="s-field">
+                  <label>{T.helpFieldTitle}</label>
+                  <input className="s-input" value={c.title} readOnly />
+                </div>
+                <div className="s-field" style={{ marginTop: 6 }}>
+                  <label>{T.helpFieldDescription}</label>
+                  <input className="s-input" value={c.description} readOnly />
+                </div>
+                <div className="s-form-row" style={{ marginTop: 6 }}>
+                  <div className="s-field">
+                    <label>{T.helpFieldPhone}</label>
+                    <input className="s-input" value={c.phone} readOnly />
+                  </div>
+                  <div className="s-field">
+                    <label>{T.helpFieldEmail}</label>
+                    <input className="s-input" value={c.email} readOnly />
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
           <section className="s-settings-section">
             <h3>{T.helpTitle}</h3>
             <button className="s-btn s-btn--ghost s-btn--sm" style={{ marginBottom: 10 }} onClick={addContact}>{T.helpAdd}</button>
@@ -3068,6 +3216,7 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
               </div>
             )}
           </section>
+          </div>
           </div>
           }
         </div>
@@ -3621,6 +3770,8 @@ function SimpleApp() {
     rpsAppName: "RPS",
     helpContacts: [],
     helpDocs: [],
+    helpAuto: { feedUrl: "", fetchRegional: true, fetchDistrict: true, placeholderRemoved: false },
+    helpAutoRecord: null,
     videoPlayerPath: "",
     settingsPasswordEnabled: true,
     settingsPassword: "help123",
@@ -3640,6 +3791,29 @@ function SimpleApp() {
       window.cfc.settings.load().then(setSettings).catch(() => {});
     }
   }, []);
+
+  // Main pushes a fresh payload when the background location-directory refresh
+  // succeeds, so a station's first-ever fetch fills in its mall name and
+  // manager contacts mid-session instead of waiting for the next launch.
+  // Held back while Settings is open: SettingsScreen copies settings into its
+  // own draft at mount, so applying a push underneath it would mean the
+  // admin's next Save writes the pre-push values straight back.
+  const pendingPush = React.useRef(null);
+  const settingsOpenRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!(window.cfc && window.cfc.settings && window.cfc.settings.onChanged)) return;
+    return window.cfc.settings.onChanged((next) => {
+      if (settingsOpenRef.current) pendingPush.current = next;
+      else setSettings(next);
+    });
+  }, []);
+  React.useEffect(() => {
+    settingsOpenRef.current = settingsOpen;
+    if (!settingsOpen && pendingPush.current) {
+      setSettings(pendingPush.current);
+      pendingPush.current = null;
+    }
+  }, [settingsOpen]);
 
   const next = () => setStep((s) => Math.min(5, s + 1));
   const back = () => setStep((s) => Math.max(1, s - 1));
