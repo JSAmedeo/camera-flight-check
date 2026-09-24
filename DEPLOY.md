@@ -3,7 +3,11 @@
 Two ways to put Camera Flight Check on a station PC. Both are built with `npm run package`
 and land in `dist\`.
 
-## Option A — Installer (recommended for field systems)
+**For the fleet rollout, use Option B (portable + Kaseya)** — that's the validated
+path and the one the deployment procedure is written against. Option A is for
+one-off or manual installs.
+
+## Option A — Installer (one-off / manual installs)
 
 **File:** `dist\installer\Camera Flight Check Setup.exe`
 
@@ -20,24 +24,52 @@ and land in `dist\`.
 
 **File:** `dist\CameraFlightCheck-<version>-portable.zip`
 
-**This is the deployment path used for the Kaseya rollout** — pushed to each
-station and unzipped by the Kaseya procedure.
+**This is the deployment path used for the Kaseya rollout.** The five steps
+below are the whole procedure — an untouched machine taken through them
+launches clean, with no SmartScreen or Defender prompt. Validated end to end on
+a field machine 2026-09-24.
 
-1. Unzip anywhere (e.g. `C:\CameraFlightCheck\`).
-2. **Unblock the extracted files before first launch** — a zip downloaded
-   over the network carries Windows' "Mark of the Web," which is what
-   triggers the SmartScreen prompt below. Clearing it here avoids the
-   prompt entirely instead of relying on someone clicking through it at
-   the station. Add this as a step in the Kaseya procedure right after the
-   files land, before the app is ever run:
-   ```powershell
-   Get-ChildItem -Path "C:\CameraFlightCheck" -Recurse | Unblock-File
-   ```
-   (adjust the path to wherever that Kaseya step actually extracts to). No
-   admin rights needed. This has to run again for every new version pushed
-   — the mark is per-file, not per-folder-location.
-3. Run `Camera Flight Check.exe` from the unzipped folder.
-4. Delete the folder to remove it completely.
+### Kaseya deployment procedure
+
+| # | Step | Detail |
+|---|---|---|
+| 1 | Create the install folder | `C:\preflight-ops-check` |
+| 2 | Download the portable zip | from the FTP server, `0bk.net/chp/installers` |
+| 3 | Extract into the folder | contents go directly in `C:\preflight-ops-check` — the exe sits at the root, not in a subfolder |
+| 4 | Create a desktop shortcut | target `C:\preflight-ops-check\Camera Flight Check.exe` |
+| 5 | Clear Mark of the Web | `Get-ChildItem "C:\preflight-ops-check" -Recurse -File \| Unblock-File` |
+
+Notes that matter for the procedure:
+
+- **Step 5 must run before the app is ever launched.** A zip that arrived over a
+  network carries Windows' "Mark of the Web", and Windows propagates it to every
+  extracted file — that tag, not the app, is what triggers SmartScreen. Clearing
+  it avoids the prompt outright rather than relying on someone at the station
+  clicking through it. No admin rights needed, and it prints nothing on success.
+- **It has to run again for every version pushed.** The mark is per file, not
+  per folder, so a new zip arrives tagged again. Unblocking the *zip* before
+  extracting works too and is one call instead of ~180 —
+  `Unblock-File "<path>\CameraFlightCheck-<version>-portable.zip"` — since the
+  tag propagates from the archive to whatever comes out of it.
+- **Verify step 5 worked** by re-running the check; empty output means clean:
+  ```powershell
+  Get-ChildItem "C:\preflight-ops-check" -Recurse -File |
+    Where-Object { Get-Item $_.FullName -Stream Zone.Identifier -ErrorAction SilentlyContinue } |
+    Select-Object -ExpandProperty FullName
+  ```
+- **No Defender exclusion is needed.** A clean machine taken through these steps
+  launches without one. If a prompt still appears, read it before excluding
+  anything — "Windows protected your PC" means step 5 didn't run or ran against
+  the wrong path, whereas an actual Defender threat notice is a different problem
+  and worth investigating rather than excluding away.
+- **The shortcut needs no icon file.** A Windows shortcut takes its icon from the
+  target exe, which carries the app icon, so step 4 is just target + name.
+- **The folder must stay writable.** The app writes `location-directory.json`
+  (~145KB of mall names and manager contacts) next to the exe, and by default
+  also creates `Logs\`, `Photos\` and `Diagnostics\` under the same root.
+- **To confirm which build is running** without launching it: right-click
+  `Camera Flight Check.exe` → Properties → Details → ProductVersion.
+- **To remove it completely**, delete the folder and the shortcut.
 
 ## Station PC requirements
 
@@ -80,10 +112,12 @@ three File Output Paths if they shouldn't point at the default
   run with `--simulate`.
 - **SmartScreen blocks the app** ("Windows protected your PC") — the build is unsigned,
   so any copy that still carries Windows' "Mark of the Web" (anything that arrived over
-  a network rather than local media) triggers this. The Kaseya procedure should already
-  run `Unblock-File` on the extracted folder before first launch (see Option B) — if it's
-  still prompting, that step didn't run or ran against the wrong path. One-off fix on a
-  single machine: More info → Run anyway, or `Unblock-File` by hand on that install.
+  a network rather than local media) triggers this. Step 5 of the Kaseya procedure
+  (see Option B) clears it before first launch — if it's still prompting, that step
+  didn't run or ran against the wrong path. Confirm with the Zone.Identifier check in
+  Option B, which lists exactly which files are still tagged. One-off fix on a single
+  machine: `Get-ChildItem "C:\preflight-ops-check" -Recurse -File | Unblock-File`, or
+  More info → Run anyway to get past it once without fixing the cause.
 - **Grey-card correction looks wrong** (bad white balance, unexpected result, or the box
   keeps getting rejected as "doesn't look like a grey card") — every attempt is saved
   under Settings → General → File Output Paths → Diagnostics →
