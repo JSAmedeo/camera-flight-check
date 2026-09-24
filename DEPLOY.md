@@ -36,7 +36,7 @@ a field machine 2026-09-24.
 | 1 | Create the install folder | `C:\preflight-ops-check` |
 | 2 | Download the portable zip | from the FTP server, `0bk.net/chp/installers` |
 | 3 | Extract into the folder | contents go directly in `C:\preflight-ops-check` — the exe sits at the root, not in a subfolder |
-| 4 | Create a desktop shortcut | target `C:\preflight-ops-check\Camera Flight Check.exe` |
+| 4 | Create a desktop shortcut | target `C:\preflight-ops-check\Camera Flight Check.exe`, named **`Pre-Flight Ops Check`** |
 | 5 | Clear Mark of the Web | `Get-ChildItem "C:\preflight-ops-check" -Recurse -File \| Unblock-File` |
 
 Notes that matter for the procedure:
@@ -62,6 +62,11 @@ Notes that matter for the procedure:
   anything — "Windows protected your PC" means step 5 didn't run or ran against
   the wrong path, whereas an actual Defender threat notice is a different problem
   and worth investigating rather than excluding away.
+- **Name the shortcut `Pre-Flight Ops Check`, not the exe's own name.** Windows
+  would default it to "Camera Flight Check" after the exe, but what operators see
+  in the app's top bar is **Pre-Flight Ops Check** — the shortcut should match the
+  app, not the filename. (If that title is ever changed, it lives in `strings.js`
+  under `app.title`, and this step should change with it.)
 - **The shortcut needs no icon file.** A Windows shortcut takes its icon from the
   target exe, which carries the app icon, so step 4 is just target + name.
 - **The folder must stay writable.** The app writes `location-directory.json`
