@@ -3837,7 +3837,13 @@ function SimpleApp() {
         type: "check_started",
         runId: id,
         locationNumber: (settings.location && settings.location.number) || null,
-        locationName: (settings.location && settings.location.name) || null,
+        // locationNameResolved first: the mall name normally comes from the
+        // location directory now, and settings.location.name is only set when
+        // an admin typed a custom one. Reading the saved field alone logged
+        // null at every station once the mall CSV was retired -- caught in the
+        // 2026-09-24 field logs. These records are API-shaped and will be
+        // POSTed, so a null name there is lost data, not just a display gap.
+        locationName: settings.locationNameResolved || (settings.location && settings.location.name) || null,
         station: (settings.location && settings.location.station) || "Camera 1",
         startedAt
       }).catch(() => {});

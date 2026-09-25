@@ -223,7 +223,7 @@ window.CFC_STRINGS = {
     // duration can be bold) and always start a new line.
     ledeIntro: "We'll run through a checklist and calibrate your camera using the grey card.",
     ledeBefore: "This will take ",
-    ledeBold: "about 4 minutes",
+    ledeBold: "about 2 minutes",
     ledeAfter: ".",
     needsTitle: "What you'll need",
     need1Title: "Grey card",
@@ -441,7 +441,7 @@ window.CFC_STRINGS = {
   // ---- screen 4: test photo + guided QA ----
   testPhoto: {
     aimTitle: "Take a test photo",
-    aimLede: "Take a test photo for upload to the Quality Control Dashboard.",
+    aimLede: "Take a test photo to check photo composition and quality. Use the tools to fine tune color and brightness.",
     retakeTitle: "Take another test photo",
     retakeLede: "We adjusted the camera — take a fresh shot to check the fix.",
     photoPlaceholder: "The test photo will appear here",
