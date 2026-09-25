@@ -2,10 +2,17 @@
 
 A Windows desktop utility that seasonal photo-set operators run before each
 shift at Cherry Hill Programs venues (Santa/Bunny sets). It walks the
-operator through a ~4-minute readiness check — set checklist, camera
-detection, grey-card white-balance/exposure calibration, a guided test-photo
-review — and then hands off to RPS, the photo sales app, releasing the
-camera's USB session so RPS can use it.
+operator through a short readiness check — set checklist, camera detection,
+grey-card white-balance/exposure calibration, a guided test-photo review —
+and then hands off to RPS, the photo sales app, releasing the camera's USB
+session so RPS can use it. Real runs at three venues on 2026-09-24 took
+30–87 seconds.
+
+It also keeps itself current without anyone visiting the station: one
+background request per launch fetches the company location directory, which
+supplies the venue's mall name and its Regional/District Manager contacts.
+That data is cached on disk and never expires, so a site whose cellular
+router is down keeps working on the last good copy.
 
 Internal Cherry Hill Programs software — see `LICENSE` and
 `THIRD-PARTY-NOTICES.md`.
@@ -51,7 +58,9 @@ main.js / preload.js          Electron main process, window + IPC surface
 camera-bridge.js              spawns the camera helper or the built-in simulator
 camera-host/                  .NET 4.8 x86 console exe that talks to the camera
                                (Canon EDSDK + Nikon PTP via digiCamControl)
-assets/                       bundled images (framing guide, tutorial photos)
+assets/                       bundled images (framing guide, tutorial photos,
+                               icon.ico + app-mark.png — the app icon, one
+                               source for the exe, installer and top bar)
 help-feed.js                  location directory: fetches mall names + manager
                                contacts, caches them for offline use
 vendor/                       vendored React/Babel/Geist — fully offline app,
@@ -70,9 +79,14 @@ npm run package       # scripts/package.js — dist, then produces both a
 ```
 
 Bump `version` in `package.json` before each field drop — it's what makes a
-given install traceable in the run logs and in field bug reports.
+given install traceable in the run logs and in field bug reports. It also
+lands in the exe's ProductVersion, so the running build can be confirmed from
+file properties without launching anything. Always check that before chasing a
+"still broken" report: a stale same-named folder has masked a day of fixes
+before.
 
-See `DEPLOY.md` for how to actually install a build on a station PC, field
+See `DEPLOY.md` for how to actually install a build on a station PC — it
+carries the Kaseya deployment procedure used for the fleet rollout, field
 troubleshooting, and station-PC requirements.
 
 ## Where to look for more

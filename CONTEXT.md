@@ -16,8 +16,8 @@ Target hardware: Canon EOS Rebel T5–T7 (T6 and T7 validated on real hardware 2
 
 | Model | Count | digiCamControl coverage |
 |---|---|---|
-| D-3000 | 1,586 | generic (`NikonBase` PTP) |
-| D-3400 | 638 | generic |
+| D-3000 | 1,586 | generic (`NikonBase` PTP) — still unconfirmed on real hardware |
+| D-3400 | 638 | **validated 2026-09-24** at location 1126 — claimed by `NikonD600Base`, not the generic path this table predicted |
 | D-5200 | 83 | dedicated (`NikonD5200`) |
 | D-90 | 58 | dedicated (`NikonD90`) |
 | D-5500 | 52 | generic |
@@ -48,7 +48,7 @@ The UI was designed in Claude Design (claude.ai/design), project id `af76a28a-f0
 | 1 | Import Simple Mode design, run as local HTML | **COMPLETE** (2026-07-13) |
 | 2 | Standalone Windows desktop app (Electron, offline, frameless floating window) | **COMPLETE** (2026-07-13) |
 | 3 | Real camera functionality (detect / capture / grey-card correction), simulator-verified | **COMPLETE** (2026-07-14) |
-| 4 | Hardware + field validation (Canon + Nikon), operator UX build-out, deployable packaging | **IN PROGRESS** — T6 + T7 fully working incl. field grey-card runs; real-person test next. D3400 full app-driven grey-card calibration run also passed (2026-08-18): detected, communicated cleanly, computed and applied new settings on the camera. Other Nikon bodies still unvalidated |
+| 4 | Hardware + field validation (Canon + Nikon), operator UX build-out, deployable packaging | **IN PROGRESS** — T6 + T7 fully working incl. field grey-card runs; real-person test next. D3400 validated twice: a full app-driven grey-card calibration run (2026-08-18) and a live venue run at location 1126 (2026-09-24, claimed by `NikonD600Base`). Multi-venue test across 3 real sites passed 2026-09-24, and Kaseya deployment is proven on an untouched machine. D-3000 (1,586 bodies) still unvalidated |
 | 5 | (Candidate) PhotoFlow Desktop convergence, failure screens, QC upload, RPS launch, API posting | TBD |
 
 ### Phase 2 details
@@ -86,7 +86,7 @@ Operator UX built out (all 2026-07-15, v1.0.1):
 ### String externalization + tutorial media (2026-07-16)
 All operator-facing copy moved to `strings.js` (`window.CFC_STRINGS`) — screens reference `S.*` keys, templates use `{placeholders}` via `fmt()`. Editing training copy is now a text-file change with no code involvement. The walk-around "More info" popups became a click-through micro-tutorial (steps + dots + Back/Next, keyboard nav): step titles/captions come from `strings.js` (`walk.items.<key>.steps`), and each step displays `assets/tutorials/<key>-<n>.png` when the file exists — until then a placeholder names the expected file (hand-built SVG animations were removed as premature; real equipment photos are the plan, `assets/tutorials/README.txt` lists the 18 filenames). Dev-HUD labels and the technical settings-strip abbreviations (f/, ISO, WB, BAT) intentionally stay in code.
 
-### Admin settings overhaul + operator-flow polish (2026-09-14 through 2026-09-19, `ui-revamp`, uncommitted)
+### Admin settings overhaul + operator-flow polish (2026-09-14 through 2026-09-19, `ui-revamp`, committed `9d37c53`)
 A long iterative round driven entirely by internal feedback screenshots, no hardware involved. The admin Settings screen (opened via the gear icon) grew from a flat single-column form into a properly organized surface:
 
 - **Help Config** (was "Need Help contacts"): two side-by-side columns, Documentation and Contacts, each entry its own bordered/reorderable box. Documentation entries carry a name plus either a local file or an external URL (mutually exclusive); local video files open through an admin-settable **default video player** (spawned directly via `child_process.spawn`) instead of `shell.openPath()`, which defers to Windows' file-association chooser and can prompt the operator to pick an app. The operator-facing "Need help?" popup mirrors the column layout, color-coded (amber Documentation, green Contacts) and sized to grow with content up to the app's own height before scrolling internally per column.
@@ -94,7 +94,17 @@ A long iterative round driven entirely by internal feedback screenshots, no hard
 - **General tab**: Location & Station (unchanged) → **File Output Paths** (three separate folders: Completion Logs and Diagnostics both feed real write targets — session JSONL and `camera-host.log` respectively — Test Photos is a placeholder field with no writer behind it yet) → **Skip Reasons** (the existing prompt toggle plus a full admin-editable reason list, replacing three reasons that used to be hardcoded in `strings.js`) → **App Defaults** (the exit-app launch is now optional and nameable — `rpsLaunchEnabled`/`rpsPath`/`rpsAppName` — plus the video player setting).
 - **Operator-flow changes riding along**: Set Checklist cards gained a per-card "Skip this step" so a missing router/webcam/flash doesn't block the whole screen; the grey-card box now needs an explicit checkmark tap to confirm (red X to discard and redraw) instead of advancing the instant a drag/tap ends; Test Photo's three QA questions each grow a "Skip and continue" escape hatch after one failed retake, so a genuinely broken check doesn't strand the operator; the Done screen's button text and its step-dots (all green checkmarks once you arrive, not a lingering orange "5") adapt to whether an exit app is configured.
 
-None of this has been validated against real camera hardware — it's UI/settings-model work, verified via the simulator and headless screenshots only — and as of this writing it is **uncommitted** on top of `9f7037b` (still branch `ui-revamp`).
+None of this was validated against real camera hardware at the time — UI/settings-model work verified via the simulator and headless screenshots only. It was committed as `9d37c53` and field-validated on a real station 2026-09-22.
+
+### Location directory, app icon, and the multi-venue field test (2026-09-23 → 2026-09-24, v1.5.0–1.5.1)
+
+**Location directory (`help-feed.js`, v1.5.0).** The Need Help popup's Regional and District Manager contacts stopped being hand-typed per station. The app makes one background request per launch to the company location feed — its only outbound network call — and derives both contacts, plus the Welcome screen's mall name, from this station's location number. Two constraints shaped it: the admin is IT and is never on site, so a mid-season manager change has to land with nobody touching anything (hence no review/accept step — the feed simply wins); and venues run on cellular routers that drop for hours, so the boiled-down directory on disk never expires and a failed fetch is always a no-op. `assets/malls.csv` was retired in the same round — the feed's mall names proved byte-identical for all 549 numbers the two shared. Full design rationale lives in CLAUDE.md § Location directory.
+
+**App icon (v1.5.1).** One `assets/icon.ico` now feeds the exe, the installer and the in-app top-bar mark, so the desktop shortcut and the running app finally match.
+
+**Multi-venue field test (2026-09-24).** Three real venues plus a demo machine; logs committed under `field-test logs/`. The headline is that **Nikon D-3400 works** — see § Target hardware, it's ~24% of the fleet and the path it took wasn't the one predicted. Everything core held up at all three sites: feed reached every mall network, grey-card corrections applied, all camera-host logs clean. Deployment through Kaseya was proven on an untouched machine (DEPLOY.md has the procedure).
+
+The test also caught a regression worth recording as a pattern: **every run at every station was logging `locationName: null`.** Retiring the mall CSV moved the name out of `settings.location.name` into a derived `locationNameResolved`, and the run-log builder still read the saved field — which is now blank unless an admin typed an override. Nothing looked wrong in the UI, because the Welcome screen already read the resolved value; only the written record was affected, and these records are the ones destined for the API. The lesson generalises: when a value moves from *stored* to *derived*, the UI tends to get updated because someone looks at it, while writers fail silently.
 
 ## Key Files
 
@@ -105,8 +115,11 @@ None of this has been validated against real camera hardware — it's UI/setting
 - `simple-styles.css` — design-synced base stylesheet
 - `main.js` / `preload.js` / `camera-bridge.js` — Electron shell (window, zoom, run log IPC), API surface, camera bridge + simulator
 - `camera-host/` — .NET camera helper (`Program.cs`, `CameraHost.csproj`, `lib/` vendored digiCamControl 2.1.7 DLLs + VC++ runtimes)
+- `help-feed.js` — location directory: fetch, boil-down, atomic cache write, number normalisation, mall-name resolution, season code
+- `assets/icon.ico` / `assets/app-mark.png` — the app icon (exe, installer, taskbar) and the top-bar mark sliced out of it
+- `field-test logs/` — committed evidence from the 2026-09-24 multi-venue test (session JSONL, grey-card `analysis.json` + captures, camera-host logs, the fetched directory per site)
 - `scripts/dist.js` / `scripts/package.js` — build + packaging pipeline
-- `DEPLOY.md` — field installation guide; `.claude/settings.json` — broad permission allowlist
+- `DEPLOY.md` — field installation guide, incl. the Kaseya deployment procedure; `.claude/settings.json` — broad permission allowlist
 - `shared.jsx`, `screens/05-liveview.jsx` — prototype chrome + `SantaScene` SVG (kept for design parity)
 - `assets/` — SVG-rendered stand-in photos + simulator captures (warm/neutral)
 - `Camera Flight Check - Failure Screens.html` + `simple-failures.jsx` — designed failure states, not yet integrated
@@ -137,4 +150,8 @@ PhotoFlow Desktop (sibling repo) is Tauri v2 + React 18 + TypeScript + Vite and 
 14. **Test Photos folder has no writer** — `settings.paths.testPhotos` is a real, admin-configurable field, but nothing currently saves a captured test photo to disk (captures only ever live as in-memory data URLs). Needs a design decision before wiring it up: which photo(s) to save (every capture, or just the accepted one), naming/format, and whether it should key off the run id like the session logs do
 15. **Diagnostics path is bound at helper-spawn time** — changing `settings.paths.diagnostics` takes effect on the next app launch, not live, same limitation the old fixed `%APPDATA%` log location always had; a config change here is currently silent about needing a restart
 16. **Default video player is untested against a real player** — the `videoPlayerPath` → `spawn()` routing (see the 2026-09 admin-settings entry above) has only been exercised with the setting blank (falls back to `shell.openPath`); needs a pass with an actual player exe (VLC, Windows Media Player, etc.) configured on a real station
-17. **Settings-round work is entirely uncommitted and hardware-unvalidated** — see the 2026-09-14–19 phase-history entry; needs a commit pass and, eventually, a real-station smoke test before it's considered field-ready
+17. ~~**Settings-round work is entirely uncommitted and hardware-unvalidated**~~ — done: committed `9d37c53` and field-validated 2026-09-22
+18. **Exposure compensation is read but never acted on** — the D3400 at location 1126 was running **+2.7 EV** (2026-09-24 field logs) and came out 1.73 stops over. The grey-card pass corrected by dropping ISO, but the compensation stays on the body, so the same overexposure returns every run and is re-corrected every run: the app treats the symptom and cannot reach the cause. `exposureComp` is already in the settings payload, so warning when it's non-zero is cheap. Decide whether that's a Set Checklist item, a camera-detect warning, or part of the grey-card result card
+19. **`EV_TOLERANCE` boundary behaviour** — location 1181 measured `evDelta -0.999` against a 1.0-stop tolerance and reported "no change needed" on a frame essentially exactly one stop out. Correct by the rule, but that station will flip between "fine" and "corrected" run to run; worth watching whether the tolerance or the messaging needs adjusting once more venues report
+20. **Add-or-Remove-Programs icon is generic** — Squirrel's `iconUrl` must resolve on the target machine, so it's deliberately unset (see CLAUDE.md § App icon). Everything user-facing (desktop shortcut, Start Menu, taskbar, Setup.exe) carries the real icon. Fixing the ARP entry means hosting `icon.ico` at a stable https URL
+21. **Nikon D-3000 still unconfirmed** — D-3400 validated 2026-09-24 and landed on `NikonD600Base` rather than the generic path, so the fleet table's prediction was wrong for it. D-3000 is 1,586 of 2,669 bodies and remains untested; don't assume it follows the D-3400's path

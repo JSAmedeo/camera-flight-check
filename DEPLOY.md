@@ -84,6 +84,8 @@ Notes that matter for the procedure:
 | .NET Framework 4.8 | preinstalled on Windows 10 1903+ — only very old images need it ([download](https://dotnet.microsoft.com/download/dotnet-framework/net48)) |
 | USB port + camera cable | camera must be ON and the mode dial on **M** for setting corrections |
 | No vendor software needed | Canon EDSDK / Nikon PTP drivers are bundled; EOS Utility etc. does NOT need to be installed (and must not be running — it would hold the camera) |
+| Outbound HTTPS to `db0.cherryhillprograms.com:8090` | **Optional but wanted.** The app's only network call — one background request per launch to fetch the location directory (mall name + Regional/District Manager contacts). Everything else works offline; a station that can never reach it just shows no mall name and no manager contacts. Reached successfully from three different mall networks 2026-09-24 |
+| A writable install folder | The app writes `location-directory.json` beside the exe, and by default creates `Logs\`, `Photos\` and `Diagnostics\` under `C:\preflight-ops-check` |
 
 ## Field-test checklist
 
@@ -123,6 +125,17 @@ three File Output Paths if they shouldn't point at the default
   Option B, which lists exactly which files are still tagged. One-off fix on a single
   machine: `Get-ChildItem "C:\preflight-ops-check" -Recurse -File | Unblock-File`, or
   More info → Run anyway to get past it once without fixing the cause.
+- **No mall name on the Welcome screen, or no manager contacts in Need Help** — both come from
+  the location directory, so check them in this order under Settings → General. (1) Is a
+  **location number** set? It's taken from the PC name when that matches `MALL####-Camera`,
+  otherwise an admin has to enter it. (2) Does the line under Location Name say **"No location
+  data for this number yet"**? Then either the station has never reached the feed, or this venue
+  isn't in it — Settings → Help Config spells out which in plain language. (3) Has the fetch ever
+  succeeded? `location-directory.json` sits next to the exe; no file means it never has. A station
+  that fetched once keeps working offline indefinitely, so this is almost always a first-launch or
+  firewall question, not an intermittent one. Note ~17 real venues (mostly zoos, aquariums and
+  other attractions) genuinely have no managers listed at source — one card or none is correct
+  there, not a fault.
 - **Grey-card correction looks wrong** (bad white balance, unexpected result, or the box
   keeps getting rejected as "doesn't look like a grey card") — every attempt is saved
   under Settings → General → File Output Paths → Diagnostics →
