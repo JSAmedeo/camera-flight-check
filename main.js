@@ -311,6 +311,13 @@ function setupSettings() {
     return settingsPayload();
   });
   ipcMain.handle("settings:hostname", () => os.hostname());
+  // Looks a location number up in the directory without saving anything. The
+  // Settings screen needs this because its draft number changes as the admin
+  // types, while the record attached to the settings payload is the one for
+  // the number already saved -- so the name shown beside the header would
+  // otherwise lag a save behind.
+  ipcMain.handle("location:lookup", (_e, number) =>
+    helpFeed.lookupRecord(locationDirectory, number));
   // Pass the owning BrowserWindow so the native dialog is properly modal to
   // it — without a parent, an unowned dialog can end up behind or detached
   // from the app window, which reads as the whole app being frozen.

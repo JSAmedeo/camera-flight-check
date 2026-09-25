@@ -2527,6 +2527,32 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
 
   const numOrNull = (v) => v === "" ? null : Number(v);
 
+  // Location number/name are shown beside their headers and their boxes stay
+  // locked until the admin asks to change one -- they're set once at install
+  // and a stray keystroke in either is the kind of thing nobody notices until
+  // a run logs the wrong venue. Unlocking lasts until Settings is closed.
+  const [locUnlocked, setLocUnlocked] = React.useState({ number: false, name: false });
+
+  // The mall name for whatever number is currently in the draft. Looked up
+  // through main on every change, because settings.helpAutoRecord is the
+  // record for the number already SAVED -- relying on it would leave the name
+  // a save behind whenever the number is edited.
+  const [lookupMall, setLookupMall] = React.useState(
+    (settings.helpAutoRecord && settings.helpAutoRecord.mall) || "");
+  React.useEffect(() => {
+    if (!(window.cfc && window.cfc.settings && window.cfc.settings.lookupLocation)) return;
+    let cancelled = false;
+    window.cfc.settings.lookupLocation(draft.location.number)
+      .then((rec) => { if (!cancelled) setLookupMall((rec && rec.mall) || ""); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [draft.location.number]);
+
+  // What the station will actually be called: a typed override wins, else the
+  // looked-up name, else nothing useful yet.
+  const effectiveLocationName =
+    draft.location.name || lookupMall || T.locationValueNotSet;
+
   // What the operator will actually see, built from the live settings (not the
   // draft) since the record only changes when main refreshes it. Toggling a
   // switch still updates the preview immediately, because buildAutoContacts
@@ -2723,37 +2749,55 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
             <h3>{T.locationTitle}</h3>
             <div className="s-form-row">
               <div className="s-field">
-                <label>{T.locationNumberLabel}</label>
+                <label>
+                  {T.locationNumberLabel}
+                  <span className="s-field-value">{draft.location.number || T.locationValueNotSet}</span>
+                </label>
                 <input
-                  className="s-input"
+                  className={`s-input ${locUnlocked.number ? "" : "s-input--locked"}`}
                   value={draft.location.number}
+                  readOnly={!locUnlocked.number}
                   placeholder={draft.hostname || T.locationNumberPlaceholder}
                   onChange={(e) => setField("location", "number", e.target.value)} />
+                {!locUnlocked.number &&
+                <button
+                  className="s-btn s-btn--ghost s-btn--sm s-field-change"
+                  onClick={() => setLocUnlocked((u) => ({ ...u, number: true }))}>
+                    {T.locationNumberChange}
+                  </button>
+                }
               </div>
               <div className="s-field">
-                <label>{T.locationNameLabel}</label>
-                {/* Left blank on purpose: the name is looked up from the
-                    location directory by number so it tracks a rename at
-                    source, and typing here overrides that for good. The
-                    looked-up value is shown on its own line below rather than
-                    as the placeholder -- greyed placeholder text reads as "not
-                    set" even when the lookup worked. */}
+                <label>
+                  {T.locationNameLabel}
+                  <span className="s-field-value">{effectiveLocationName}</span>
+                </label>
+                {/* The box stays EMPTY while the name is coming from the
+                    location data -- it must never be pre-filled with the
+                    looked-up name, or saving would persist it and the station
+                    would stop tracking a rename at source. Text here is an
+                    override, which is why the header above shows the effective
+                    name and the note below shows what the data actually says. */}
                 <input
-                  className="s-input"
+                  className={`s-input ${locUnlocked.name ? "" : "s-input--locked"}`}
                   value={draft.location.name}
-                  placeholder={settings.helpAutoRecord && settings.helpAutoRecord.mall
-                    ? T.locationNamePlaceholder
-                    : T.locationNamePlaceholderNoData}
+                  readOnly={!locUnlocked.name}
+                  placeholder={lookupMall ? T.locationNamePlaceholder : T.locationNamePlaceholderNoData}
                   onChange={(e) => setField("location", "name", e.target.value)} />
-                {/* Uses the raw feed record, NOT locationNameResolved -- that
-                    one is the *effective* name, so once an admin types an
-                    override it returns their text and the note would claim
-                    their own words came from the location data. */}
-                <div className="s-field-note">
-                  {settings.helpAutoRecord && settings.helpAutoRecord.mall
-                    ? fmt(T.locationNameFromData, { name: settings.helpAutoRecord.mall })
-                    : T.locationNameNotFound}
-                </div>
+                {!locUnlocked.name &&
+                <button
+                  className="s-btn s-btn--ghost s-btn--sm s-field-change"
+                  onClick={() => setLocUnlocked((u) => ({ ...u, name: true }))}>
+                    {T.locationNameChange}
+                  </button>
+                }
+                {/* Only worth showing once the admin has overridden: otherwise
+                    it just repeats the name already beside the header. */}
+                {draft.location.name
+                  ? <div className="s-field-note">
+                      {lookupMall ? fmt(T.locationNameFromData, { name: lookupMall }) : T.locationNameNotFound}
+                    </div>
+                  : !lookupMall && <div className="s-field-note">{T.locationNameNotFound}</div>}
               </div>
             </div>
             <div className="s-field" style={{ marginTop: 8 }}>

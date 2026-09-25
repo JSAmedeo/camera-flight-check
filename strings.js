@@ -62,6 +62,9 @@ window.CFC_STRINGS = {
     // Shown instead when there's no name to fall back on, so the box doesn't
     // point at a line that says there's nothing there.
     locationNamePlaceholderNoData: "Type a name for this station",
+    locationValueNotSet: "Not set",
+    locationNumberChange: "Change number",
+    locationNameChange: "Change name",
     locationNameFromData: "From location data: {name}",
     locationNameNotFound: "No location data for this number yet.",
     stationLabel: "Station",

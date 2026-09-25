@@ -821,6 +821,24 @@
   /* Read-only value shown under a Settings input -- for a field whose real
      value is derived elsewhere and where the box itself is an override. */
   .s-field-note { font-size: 11px; color: var(--dim); margin-top: 4px; line-height: 1.4; }
+  /* The live value shown beside a field's header, so the current location
+     reads at a glance without hunting in a locked box. */
+  .s-field-value {
+    margin-left: 8px;
+    color: var(--accent-2);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  /* A field that can't be edited until its Change button is pressed. Dimmed so
+     it doesn't invite typing; the same treatment the read-only path and
+     auto-contact fields already use. */
+  .s-input--locked {
+    background: var(--card);
+    color: var(--text-2);
+    cursor: default;
+  }
+  .s-field-change { margin-top: 6px; align-self: flex-start; }
   .s-help-auto-note { font-size: 11.5px; color: var(--text-2); margin: -2px 0 8px; }
   .s-help-auto-status { font-size: 11px; color: var(--dim); margin: 8px 0 10px; line-height: 1.45; }
   .s-help-edit-row--auto { position: relative; border-style: dashed; }
