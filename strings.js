@@ -56,7 +56,14 @@ window.CFC_STRINGS = {
     locationNumberLabel: "Location number",
     locationNumberPlaceholder: "Not detected",
     locationNameLabel: "Location name",
-    locationNameNotFound: "Not Found",
+    // Leave the box empty to use the name from the location data (shown
+    // underneath). Type a name only to override it for this station.
+    locationNamePlaceholder: "Using the name below",
+    // Shown instead when there's no name to fall back on, so the box doesn't
+    // point at a line that says there's nothing there.
+    locationNamePlaceholderNoData: "Type a name for this station",
+    locationNameFromData: "From location data: {name}",
+    locationNameNotFound: "No location data for this number yet.",
     stationLabel: "Station",
     stationPlaceholder: "e.g. Camera 1",
     dataTitle: "File Output Paths",

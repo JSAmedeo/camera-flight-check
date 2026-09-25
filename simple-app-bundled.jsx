@@ -2732,15 +2732,28 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
               </div>
               <div className="s-field">
                 <label>{T.locationNameLabel}</label>
+                {/* Left blank on purpose: the name is looked up from the
+                    location directory by number so it tracks a rename at
+                    source, and typing here overrides that for good. The
+                    looked-up value is shown on its own line below rather than
+                    as the placeholder -- greyed placeholder text reads as "not
+                    set" even when the lookup worked. */}
                 <input
                   className="s-input"
                   value={draft.location.name}
-                  // Normally left blank: the name is looked up from the location
-                  // directory by number, so it tracks a rename at source. The
-                  // looked-up value shows as the placeholder (same idea as the
-                  // hostname on the number field); typing here overrides it.
-                  placeholder={settings.locationNameResolved || T.locationNameNotFound}
+                  placeholder={settings.helpAutoRecord && settings.helpAutoRecord.mall
+                    ? T.locationNamePlaceholder
+                    : T.locationNamePlaceholderNoData}
                   onChange={(e) => setField("location", "name", e.target.value)} />
+                {/* Uses the raw feed record, NOT locationNameResolved -- that
+                    one is the *effective* name, so once an admin types an
+                    override it returns their text and the note would claim
+                    their own words came from the location data. */}
+                <div className="s-field-note">
+                  {settings.helpAutoRecord && settings.helpAutoRecord.mall
+                    ? fmt(T.locationNameFromData, { name: settings.helpAutoRecord.mall })
+                    : T.locationNameNotFound}
+                </div>
               </div>
             </div>
             <div className="s-field" style={{ marginTop: 8 }}>
