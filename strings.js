@@ -58,9 +58,11 @@ window.CFC_STRINGS = {
     locationNameLabel: "Location name",
     // Leave the box empty to use the name from the location data (shown
     // underneath). Type a name only to override it for this station.
-    locationNamePlaceholder: "Using the name below",
-    // Shown instead when there's no name to fall back on, so the box doesn't
-    // point at a line that says there's nothing there.
+    // Shown in the locked boxes: the real values sit beside the headers, so
+    // the box explains itself rather than repeating them.
+    locationNumberLocked: "Set to displayed location number",
+    locationNameLocked: "Set to displayed location name",
+    // Shown once unlocked, when the box is actually being typed into.
     locationNamePlaceholderNoData: "Type a name for this station",
     locationValueNotSet: "Not set",
     locationNumberChange: "Change number",

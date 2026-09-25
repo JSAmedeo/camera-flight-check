@@ -2753,11 +2753,17 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
                   {T.locationNumberLabel}
                   <span className="s-field-value">{draft.location.number || T.locationValueNotSet}</span>
                 </label>
+                {/* While locked the box shows explanatory text rather than the
+                    number -- that's already beside the header, and repeating it
+                    in a greyed box just reads as a field someone failed to
+                    fill in. The real value appears for editing on unlock. */}
                 <input
                   className={`s-input ${locUnlocked.number ? "" : "s-input--locked"}`}
-                  value={draft.location.number}
+                  value={locUnlocked.number ? draft.location.number : ""}
                   readOnly={!locUnlocked.number}
-                  placeholder={draft.hostname || T.locationNumberPlaceholder}
+                  placeholder={locUnlocked.number
+                    ? (draft.hostname || T.locationNumberPlaceholder)
+                    : T.locationNumberLocked}
                   onChange={(e) => setField("location", "number", e.target.value)} />
                 {!locUnlocked.number &&
                 <button
@@ -2780,9 +2786,9 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
                     name and the note below shows what the data actually says. */}
                 <input
                   className={`s-input ${locUnlocked.name ? "" : "s-input--locked"}`}
-                  value={draft.location.name}
+                  value={locUnlocked.name ? draft.location.name : ""}
                   readOnly={!locUnlocked.name}
-                  placeholder={lookupMall ? T.locationNamePlaceholder : T.locationNamePlaceholderNoData}
+                  placeholder={locUnlocked.name ? T.locationNamePlaceholderNoData : T.locationNameLocked}
                   onChange={(e) => setField("location", "name", e.target.value)} />
                 {!locUnlocked.name &&
                 <button

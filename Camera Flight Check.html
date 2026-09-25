@@ -830,13 +830,17 @@
     text-transform: none;
     letter-spacing: 0;
   }
-  /* A field that can't be edited until its Change button is pressed. Dimmed so
-     it doesn't invite typing; the same treatment the read-only path and
-     auto-contact fields already use. */
+  /* A field that can't be edited until its Change button is pressed. It has to
+     look recessed, not merely empty: --card is the normal input background, so
+     dimming the text alone left a locked box indistinguishable from any blank
+     field. --card-soft sits darker than the input default, and the softer
+     border plus reduced opacity is what actually reads as "locked". */
   .s-input--locked {
-    background: var(--card);
+    background: var(--card-soft);
+    border-color: var(--line-soft);
     color: var(--text-2);
     cursor: default;
+    opacity: 0.7;
   }
   .s-field-change { margin-top: 6px; align-self: flex-start; }
   .s-help-auto-note { font-size: 11.5px; color: var(--text-2); margin: -2px 0 8px; }
