@@ -1,0 +1,13 @@
+2026-09-24T20:37:16.415Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+2026-09-24T20:37:17.909Z [camera-host] CameraHost starting
+2026-09-24T20:38:39.042Z [camera-host] Camera connected: D3400 via NikonD600Base (IsConnected=True)
+2026-09-24T20:38:39.326Z [camera-host]   candidate: D3400 [NikonD600Base] IsConnected=True real=True prio=2
+[camera-host]   _connectedDevice: NikonD600Base
+[camera-host] Device claimed by driver: CameraControl.Devices.Nikon.NikonD600Base
+2026-09-24T20:38:40.124Z [camera-host] Camera init done: D3400 (IsConnected=True)
+2026-09-24T20:38:59.786Z [camera-host]   candidate: D3400 [NikonD600Base] IsConnected=True real=True prio=2
+[camera-host]   _connectedDevice: NikonD600Base
+[camera-host] Device claimed by driver: CameraControl.Devices.Nikon.NikonD600Base
+2026-09-24T20:40:20.247Z [camera-host] Camera sessions released
+2026-09-24T20:40:20.267Z [camera-host] CameraHost exiting
+2026-09-24T20:40:20.663Z [camera-bridge] helper exited 0

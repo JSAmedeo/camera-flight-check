@@ -1,0 +1,17 @@
+2026-09-24T21:37:05.324Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+2026-09-24T21:37:06.244Z [camera-host] CameraHost starting
+2026-09-24T21:43:09.373Z [camera-host] Camera connected: Canon EOS Rebel T7 via CanonSDKBase (IsConnected=True)
+2026-09-24T21:43:09.737Z [camera-host]   candidate: Canon EOS Rebel T7 [CanonSDKBase] IsConnected=True real=True prio=2
+[camera-host]   _connectedDevice: CanonSDKBase
+[camera-host] Device claimed by driver: CameraControl.Devices.Canon.CanonSDKBase
+2026-09-24T21:43:21.843Z [camera-host]   candidate: Canon EOS Rebel T7 [CanonSDKBase] IsConnected=True real=True prio=2
+[camera-host]   _connectedDevice: CanonSDKBase
+[camera-host] Device claimed by driver: CameraControl.Devices.Canon.CanonSDKBase
+2026-09-24T21:44:07.098Z [camera-host] Camera sessions released
+2026-09-24T21:44:07.102Z [camera-host] CameraHost exiting
+2026-09-24T21:44:07.688Z [camera-bridge] helper exited 0
+2026-09-24T21:47:53.283Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+2026-09-24T21:47:53.415Z [camera-host] CameraHost starting
+2026-09-24T21:48:34.185Z [camera-host] Camera sessions released
+2026-09-24T21:48:34.306Z [camera-host] CameraHost exiting
+2026-09-24T21:48:34.649Z [camera-bridge] helper exited 0

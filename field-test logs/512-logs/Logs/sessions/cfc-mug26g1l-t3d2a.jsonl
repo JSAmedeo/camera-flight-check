@@ -1,0 +1,3 @@
+{"type":"check_started","runId":"cfc-mug26g1l-t3d2a","locationNumber":"0512","locationName":null,"station":"Camera","startedAt":"2026-09-24T21:43:18.969Z","savedAt":"2026-09-24T21:43:18.970Z"}
+{"type":"screen_skipped","runId":"cfc-mug26g1l-t3d2a","screen":"walkaround","reason":"Running late","at":"2026-09-24T21:43:21.819Z","savedAt":"2026-09-24T21:43:21.820Z"}
+{"type":"check_completed","runId":"cfc-mug26g1l-t3d2a","startedAt":"2026-09-24T21:43:18.969Z","completedAt":"2026-09-24T21:44:07.092Z","durationSec":47,"savedAt":"2026-09-24T21:44:07.093Z"}
