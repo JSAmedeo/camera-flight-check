@@ -46,6 +46,11 @@ Notes that matter for the procedure:
   extracted file — that tag, not the app, is what triggers SmartScreen. Clearing
   it avoids the prompt outright rather than relying on someone at the station
   clicking through it. No admin rights needed, and it prints nothing on success.
+- **Delete the superseded zip from the distribution point when you upload a new
+  one.** Builds up to and including 1.5.1 packaged internal data files inside
+  `resources/app` (fixed in 1.5.2 — see CONTEXT.md § Open Items #22), so old
+  copies shouldn't linger. It also removes any chance of a station pulling the
+  wrong version.
 - **It has to run again for every version pushed.** The mark is per file, not
   per folder, so a new zip arrives tagged again. Unblocking the *zip* before
   extracting works too and is one call instead of ~180 —

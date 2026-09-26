@@ -106,6 +106,32 @@ None of this was validated against real camera hardware at the time — UI/setti
 
 The test also caught a regression worth recording as a pattern: **every run at every station was logging `locationName: null`.** Retiring the mall CSV moved the name out of `settings.location.name` into a derived `locationNameResolved`, and the run-log builder still read the saved field — which is now blank unless an admin typed an override. Nothing looked wrong in the UI, because the Welcome screen already read the resolved value; only the written record was affected, and these records are the ones destined for the API. The lesson generalises: when a value moves from *stored* to *derived*, the UI tends to get updated because someone looks at it, while writers fail silently.
 
+### Regression, packaging exposure, and a guard (2026-09-26, v1.5.2)
+
+Two problems, both found by looking at *output* rather than screens.
+
+**The `locationName` regression** (described at the end of the previous entry) was fixed by reading `locationNameResolved` in the run-log writer, and 1.5.2 exists to carry that fix to the stations. Because the run log has no UI, a guard now exists: `npm run verify:runlog` drives a real check run inside a temp `--user-data-dir` and asserts the record it wrote. It was proven in both directions — green against the fix, red against the original expression temporarily reinstated. A guard that has never gone red isn't a guard.
+
+**The field build was shipping live company data.** Packaging 1.5.2 revealed that `resources/app` contained `full-location-json-example.json` (2.3MB: last-year sales, contract net, minimum wage, a commissions note), `field-test logs/` with real venue evidence and manager contacts, and every internal doc. The app ships unpacked, so all of it was readable on every station PC. The trap was believing `.gitignore` had handled it — that file was ignored *because* it was sensitive, which made it feel dealt with, but git ignoring says nothing about packaging; `electron-packager` keeps a separate list and the two had drifted. Fixed with an explicit, commented ignore list in `scripts/dist.js`; packaged app went 24MB → 16MB. 1.5.1 had already been deleted from the test stations, so field exposure was limited to the test window — **but any copy still sitting on the FTP distribution point has the same payload inside it.**
+
+The common thread with the regression: both were invisible from the app's own screens, and both were caught only by inspecting the artifact — the written log in one case, the packaged folder in the other.
+
+## Upcoming milestones (agreed 2026-09-26)
+
+**1. Real photos for the 6 Set Checklist cards.** Purely a content drop — the pipeline has been ready since 2026-07-16. PNGs go in `assets/tutorials/` named `<cardKey>-<n>.png`; `assets/tutorials/README` lists all 20 expected filenames and the app picks them up with no code change. Keys: `clean`, `router`, `webcam`, `camera` (5, covering two mount styles), `framing`, `flash`.
+
+**2. Webcam checker utility — design only, nothing to be built yet.**
+
+*What it's for:* let venue staff bring up the webcam feed and frame the shot. Today the Set Checklist's `webcam` card ("Stura camera is ready") asks the operator to confirm mounting, lens clearance and a green light by eye — it can't show them what the camera actually sees, so a badly-aimed webcam passes the check.
+
+*The constraint that shapes everything:* each station runs **Stura**, a third-party Windows service that captures the webcam feed and uploads it to Stura's own servers, where it's reviewed through a dashboard — part security, part quality control. It is already holding the camera, continuously, and it is not ours to stop: an interruption means a gap in the security/QC record, not just a local inconvenience.
+
+*The blocking question, unanswered:* can a second process open that webcam at all while Stura has it? Windows behaviour here isn't uniform — it depends on the capture stack in use, whether the driver permits shared access, and whether the frame server is brokering. Until that's established on a real station, any design is speculation, and the answer decides between fundamentally different approaches (local second reader vs. consuming a stream Stura already produces vs. something involving Stura's own API or dashboard).
+
+*What needs finding out first, on a real station:* the webcam make/model and driver; how Stura captures (DirectShow, Media Foundation, UVC direct); whether a test app can open the device concurrently; and whether Stura exposes any local preview, stream endpoint or API that could be read instead of competing for the hardware.
+
+*Related prior art in this codebase:* gotcha #11 is the same class of problem for the DSLR (one app owns the USB session, which is why the check releases the camera before RPS opens). Gotcha #9 is the inverse concern — the DSLR path deliberately filters webcams out of device enumeration, so a new path that deliberately *wants* a webcam must not disturb that filtering.
+
 ## Key Files
 
 - `Camera Flight Check.html` — entry point; ALL locally-added CSS lives in its `<style>` block
@@ -155,3 +181,4 @@ PhotoFlow Desktop (sibling repo) is Tauri v2 + React 18 + TypeScript + Vite and 
 19. **`EV_TOLERANCE` boundary behaviour** — location 1181 measured `evDelta -0.999` against a 1.0-stop tolerance and reported "no change needed" on a frame essentially exactly one stop out. Correct by the rule, but that station will flip between "fine" and "corrected" run to run; worth watching whether the tolerance or the messaging needs adjusting once more venues report
 20. **Add-or-Remove-Programs icon is generic** — Squirrel's `iconUrl` must resolve on the target machine, so it's deliberately unset (see CLAUDE.md § App icon). Everything user-facing (desktop shortcut, Start Menu, taskbar, Setup.exe) carries the real icon. Fixing the ARP entry means hosting `icon.ico` at a stable https URL
 21. **Nikon D-3000 still unconfirmed** — D-3400 validated 2026-09-24 and landed on `NikonD600Base` rather than the generic path, so the fleet table's prediction was wrong for it. D-3000 is 1,586 of 2,669 bodies and remains untested; don't assume it follows the D-3400's path
+22. **Old builds on the FTP distribution point still contain company data** — 1.5.1 and earlier packaged `full-location-json-example.json` and `field-test logs/` inside `resources/app` (see the 2026-09-26 entry). Station copies were deleted after testing, but any zip still hosted at the distribution point carries the same payload. Delete superseded zips when uploading 1.5.2

@@ -78,6 +78,22 @@ npm run package       # scripts/package.js — dist, then produces both a
                        # portable zip and a Squirrel installer under dist/
 ```
 
+```
+npm run verify:runlog # drives a real check run in a throwaway profile and
+                       # asserts the run-log record it WROTE is well-formed
+```
+
+That last one exists because the run log has no UI, so the usual
+screenshot-based verification can't see it — a field that silently stopped
+being populated went unnoticed until logs came back from three venues. Run it
+after changing anything that feeds `check-runs.jsonl`.
+
+What ships to a station is decided by the ignore list in `scripts/dist.js`,
+**not** by `.gitignore` — the app packages unpacked, so anything left in the
+project root ends up readable on the station PC. If you add a file that holds
+real data, add it there too, and check `dist\Camera Flight Check-win32-x64\
+resources\app` to see what the field actually gets.
+
 Bump `version` in `package.json` before each field drop — it's what makes a
 given install traceable in the run logs and in field bug reports. It also
 lands in the exe's ProductVersion, so the running build can be confirmed from
