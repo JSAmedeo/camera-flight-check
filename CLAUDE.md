@@ -58,6 +58,10 @@ npm run sim          # force the camera simulator
 npm run build:host   # dotnet build camera-host -c Release
 npm run dist         # scripts/dist.js → builds helper + packages exe with helper embedded
                      #   output: dist\Camera Flight Check-win32-x64\Camera Flight Check.exe
+npm run verify:runlog # drives a real check run in a scratch --user-data-dir and
+                     #   asserts the check_started record it WROTE is well-formed.
+                     #   Run it after touching anything that feeds the run log —
+                     #   screenshots can't see this surface (see gotcha #25).
 npm run package      # scripts/package.js → dist + portable zip + Squirrel installer
                      #   (see DEPLOY.md for field install instructions)
 ```
@@ -95,6 +99,8 @@ npm run package      # scripts/package.js → dist + portable zip + Squirrel ins
 
 23. **An oversized grid/flex item clamps to the start edge — it does NOT centre and split the overflow.** `place-items: center` on a 40px `.s-top-mark` holding a 48px image put all 8px of overflow *below*, sitting the top-bar mark 4px low against its title while the CSS looked correct (`.s-top-brand` was already `align-items: center`). Measured, not guessed: `mark mid 35.60 / img mid 39.61 / title mid 35.60`. The fix is to size the container to the item rather than overflow it — after that all three agree to 0.00px. Whenever a centred item is larger than its box, assume start-alignment and check `getBoundingClientRect()` midpoints rather than trusting `place-items`.
 24. **A "locked"/read-only field style must differ from the base input's own background, or it's invisible.** `.s-input--locked` originally set `background: var(--card)` — which *is* `.s-input`'s background — so a locked box was indistinguishable from an ordinary empty one; only the text colour changed, and those boxes show placeholder text anyway. Confirmed by dumping computed styles: locked and normal both `rgb(37,44,59)`. What actually reads as locked is a *recessed* treatment — `--card-soft` (darker than the input default), a softer border and ~0.7 opacity → `rgb(32,38,52)/0.7` vs `rgb(37,44,59)/1`. Related: a locked box shouldn't echo a value that's already displayed elsewhere; it reads as a field someone failed to fill in. Show explanatory text instead and restore the real value on unlock so nothing has to be retyped from memory.
+
+25. **Headless screenshots cannot see what the app *writes*.** The verification idiom here (gotcha #16) is excellent for layout and copy and structurally blind to side-effect outputs — the run log has no UI, so nothing reads it back. That's how every station shipped `locationName: null` for two days: the Welcome screen showed the right mall name throughout, because the *display* consumer had been updated and the *writer* hadn't. **When a value moves from stored to derived, grep every consumer before shipping** — readers that display it get fixed because someone looks at them; readers that write it fail silently. `npm run verify:runlog` now guards this one record (it drives a run in a scratch `--user-data-dir` and asserts the written JSON), and it's been proven to go red against the original regression, not just green against the fix. Anything else that writes rather than shows deserves the same treatment before the API phase.
 
 ## Current Focus
 

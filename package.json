@@ -9,7 +9,8 @@
     "sim": "electron . --simulate",
     "build:host": "dotnet build camera-host -c Release",
     "dist": "node scripts/dist.js",
-    "package": "node scripts/package.js"
+    "package": "node scripts/package.js",
+    "verify:runlog": "node scripts/verify-runlog.js"
   },
   "devDependencies": {
     "electron": "^31.0.0",
