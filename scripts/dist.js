@@ -21,9 +21,27 @@ fs.rmSync(stage, { recursive: true, force: true });
 fs.cpSync(path.join(root, "camera-host", "bin", "Release"), stage, { recursive: true });
 
 // 3. package the Electron app with the helper embedded under resources/camera-host
+//
+// The ignore list is a DATA-EXPOSURE control, not just size trimming. This app
+// ships unpacked (no asar), so anything left in the project root is readable on
+// every station PC. `full-location-json-example.json` alone is 2.3MB of live
+// company data -- last-year sales, contract net, minimum wage, commission
+// notes -- and `field-test logs/` holds real venue evidence including manager
+// contact details and grey-card captures. Both were reaching the field build
+// until 2026-09-26; .gitignore does NOT cover this, the packager has its own
+// list. Anything new in the root that holds real data must be added here.
+//
+// LICENSE and THIRD-PARTY-NOTICES.md deliberately stay in: they need to ship
+// with the binaries they cover.
+const IGNORES = [
+  "^/(dist|build|camera-host|\\.claude|sessions|field-test logs)",
+  "^/(full-)?location-json-example\\.json$",
+  "^/(CLAUDE|CONTEXT|README|DEPLOY|REMEDIATION-PLAN|DESIGN-SNAPSHOT.*)\\.md$",
+  "__verify\\.html",
+];
 run(
   'npx electron-packager . "Camera Flight Check" --platform=win32 --arch=x64 --out=dist --overwrite ' +
-  '--ignore="^/(dist|build|camera-host|\\.claude)" --ignore="__verify\\.html" ' +
+  IGNORES.map((re) => `--ignore="${re}" `).join("") +
   '--icon="assets/icon.ico" ' +
   '--extra-resource="build/camera-host"'
 );
