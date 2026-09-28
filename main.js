@@ -154,7 +154,7 @@ function defaultSettings() {
     // both managers are auto-filled from the location directory now (see
     // helpAuto below). Anything in this list is a manual entry, always.
     helpContacts: [
-      { title: "Technical Support", description: "", phone: "(855) 925-4546", email: "" },
+      { title: "Technical Support", description: "Holiday IT Helpdesk", phone: "(855) 925-4546", email: "" },
     ],
     // Regional/district manager contacts pulled from the company location
     // feed and matched to this station's location number. They're derived at
@@ -182,6 +182,9 @@ function defaultSettings() {
     // RPS setup/training) are available out of the box, same as the
     // contacts above -- admins can rename, replace, or remove them.
     helpDocs: [
+      // First in the list on purpose: it's the tutorial for this app, so it's
+      // what an operator who doesn't know the check should reach for first.
+      { name: "About the Pre-Flight App", localFile: "C:\\Options\\pre-flight-app-tutorial.mp4", externalUrl: "" },
       { name: "Printer Loading Video", localFile: "C:\\Options\\DNP-DS620A_Media_Loading.mp4", externalUrl: "" },
       { name: "System Setup & RPS Help / Training", localFile: "C:\\Options\\RPS Help and Training.html", externalUrl: "" },
     ],
