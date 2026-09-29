@@ -106,6 +106,12 @@ npm run package      # scripts/package.js → dist + portable zip + Squirrel ins
 
 ## Current Focus
 
+**Deployment status — NOT LIVE ANYWHERE (as of 2026-09-28).** The app has never been installed on a production field machine. The only real-hardware installs were the test stations (1126, 1181, 512 and a demo box), and the portable build was **deleted from each after testing**. Go-live is **mid-October 2026**, pushed by the Kaseya procedure in DEPLOY.md to venue machines as they come online for the season.
+
+Two consequences worth holding onto until this line changes:
+- **There is no installed base, so there is nothing to migrate.** No field machine has a saved `settings.json`, which means every venue starts from `defaultSettings()` and picks up whatever the defaults say. Changing a default *is* the deployment mechanism right now. Don't write migration code for admin-managed lists (`helpDocs`, `helpContacts`, `skipReasons`, `cameraPresets`) on the assumption stations have their own — they don't, and a migration that fires on a hand-configured dev box duplicates entries instead of fixing them.
+- **Settings-schema changes are cheap until mid-October.** Renaming or restructuring a settings key costs nothing while the installed base is zero. After go-live it costs a migration path in `mergeSettings()` plus a field push. If something in the settings model is known to be wrong, now is when to fix it.
+
 **Next up (agreed 2026-09-26), in order:**
 1. **1.5.2 field testing** — deploy to real stations, shake out minor issues, fix them. 1.5.2 carries the `locationName` fix and is the first build that doesn't ship company data.
 2. **Real photos for the 6 Set Checklist cards** — the pipeline has been ready and waiting on content since 2026-07-16. Drop PNGs into `assets/tutorials/` named `<cardKey>-<n>.png` and they appear with no code change; `assets/tutorials/README` lists all 20 expected filenames. Card keys are `clean`, `router`, `webcam`, `camera` (5 photos — it has two valid mount styles via `extraSteps`), `framing`, `flash`. Until a file exists the app shows a placeholder naming it.

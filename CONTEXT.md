@@ -48,7 +48,7 @@ The UI was designed in Claude Design (claude.ai/design), project id `af76a28a-f0
 | 1 | Import Simple Mode design, run as local HTML | **COMPLETE** (2026-07-13) |
 | 2 | Standalone Windows desktop app (Electron, offline, frameless floating window) | **COMPLETE** (2026-07-13) |
 | 3 | Real camera functionality (detect / capture / grey-card correction), simulator-verified | **COMPLETE** (2026-07-14) |
-| 4 | Hardware + field validation (Canon + Nikon), operator UX build-out, deployable packaging | **IN PROGRESS** — T6 + T7 fully working incl. field grey-card runs; real-person test next. D3400 validated twice: a full app-driven grey-card calibration run (2026-08-18) and a live venue run at location 1126 (2026-09-24, claimed by `NikonD600Base`). Multi-venue test across 3 real sites passed 2026-09-24, and Kaseya deployment is proven on an untouched machine. D-3000 (1,586 bodies) still unvalidated |
+| 4 | Hardware + field validation (Canon + Nikon), operator UX build-out, deployable packaging | **IN PROGRESS** — T6 + T7 fully working incl. field grey-card runs; real-person test next. D3400 validated twice: a full app-driven grey-card calibration run (2026-08-18) and a live venue run at location 1126 (2026-09-24, claimed by `NikonD600Base`). Multi-venue test across 3 real sites passed 2026-09-24, and Kaseya deployment is proven on an untouched machine. Nothing is live yet — go-live is mid-October 2026, see § Deployment status. D-3000 (1,586 bodies) still unvalidated |
 | 5 | (Candidate) PhotoFlow Desktop convergence, failure screens, QC upload, RPS launch, API posting | TBD |
 
 ### Phase 2 details
@@ -115,6 +115,17 @@ Two problems, both found by looking at *output* rather than screens.
 **The field build was shipping live company data.** Packaging 1.5.2 revealed that `resources/app` contained `full-location-json-example.json` (2.3MB: last-year sales, contract net, minimum wage, a commissions note), `field-test logs/` with real venue evidence and manager contacts, and every internal doc. The app ships unpacked, so all of it was readable on every station PC. The trap was believing `.gitignore` had handled it — that file was ignored *because* it was sensitive, which made it feel dealt with, but git ignoring says nothing about packaging; `electron-packager` keeps a separate list and the two had drifted. Fixed with an explicit, commented ignore list in `scripts/dist.js`; packaged app went 24MB → 16MB. 1.5.1 had already been deleted from the test stations, so field exposure was limited to the test window — **but any copy still sitting on the FTP distribution point has the same payload inside it.**
 
 The common thread with the regression: both were invisible from the app's own screens, and both were caught only by inspecting the artifact — the written log in one case, the packaged folder in the other.
+
+## Deployment status (as of 2026-09-28)
+
+**Not live on any production machine.** Every real-hardware install so far has been a test: the three venues in `field-test logs/` (1126, 1181, 512) plus a demo box, and the portable build was deleted from each afterwards. Go-live is **mid-October 2026**, pushed by the Kaseya procedure in DEPLOY.md to venue machines as they come online for the season.
+
+This is worth stating plainly because it silently changes how several decisions should be reasoned about:
+
+- **No installed base means nothing to migrate.** No field machine has a saved `settings.json`, so every venue starts from `defaultSettings()`. Changing a default *is* the deployment mechanism today. Migration code for admin-managed lists (`helpDocs`, `helpContacts`, `skipReasons`, `cameraPresets`) would fire only on hand-configured dev boxes, where it duplicates entries rather than fixing anything.
+- **Settings-schema changes are nearly free until mid-October**, and stop being free the moment venues start saving settings. Anything known to be wrong in the settings model is cheapest to fix now.
+- **The data-exposure incident (open item #22) was contained.** 1.5.1 packaged internal data files, but it only ever reached test machines, which were wiped. The remaining risk is any superseded zip still sitting on the FTP distribution point.
+- **The `locationName: null` regression needs no backfill.** The only affected records are the handful from the field test, committed under `field-test logs/` as evidence. No production run data exists to repair.
 
 ## Upcoming milestones (agreed 2026-09-26)
 
