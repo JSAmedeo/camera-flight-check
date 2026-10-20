@@ -188,18 +188,35 @@
   .s-tut-caption span { font-size: 14px; color: var(--muted); line-height: 1.45; }
   .s-tut-caption--lines { gap: 10px; }
   .s-tut-caption--lines p { margin: 0; font-size: 14.5px; color: var(--text-2); line-height: 1.5; }
+  /* Every point on one page, as bullets, instead of a caption per paginated
+     step. Sits between the photo and the single Got it button. */
+  .s-tut-list {
+    list-style: none; margin: 14px 0 0; padding: 0;
+    display: flex; flex-direction: column; gap: 10px;
+    text-align: left;
+    animation: s-fadeup-anim 0.25s ease-out;
+  }
+  .s-tut-list li {
+    display: flex; flex-direction: column; gap: 3px;
+    padding-left: 18px; position: relative;
+  }
+  .s-tut-list li::before {
+    content: ""; position: absolute; left: 2px; top: 8px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent-2);
+  }
+  .s-tut-list b { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.35; }
+  .s-tut-list span { font-size: 13.5px; color: var(--muted); line-height: 1.45; }
   .s-tut-foot {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     margin-top: 18px;
   }
-  .s-tut-dots { display: flex; gap: 8px; }
-  .s-tut-dot {
-    width: 9px; height: 9px; border-radius: 50%;
-    background: var(--line); border: none; padding: 0; cursor: pointer;
-    transition: background 0.15s, transform 0.15s;
-  }
-  .s-tut-dot--on { background: var(--accent-2); transform: scale(1.3); }
-  .s-tut-dot--done { background: var(--pass); }
+  /* Only the Got it button left, so centre it rather than letting
+     space-between strand it against the left edge. */
+  .s-tut-foot--single { justify-content: center; }
+  /* The step dots (.s-tut-dots / .s-tut-dot) were removed 2026-10-19 along
+     with the popup's Back/Next pagination. .s-tut-caption above is kept --
+     the "Can't find your grey card?" popup still uses it. */
   @keyframes s-fadeup-anim { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
   /* tutorial artwork animations (SVG groups use transform-box for sane origins) */

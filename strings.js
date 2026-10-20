@@ -260,7 +260,6 @@ window.CFC_STRINGS = {
     itemSkipped: "Skipped",
     tutorial: {
       eyebrow: "Quick how-to",
-      of: "of",
       placeholderTitle: "Image coming soon",
       placeholderHint: "To show a photo here, add this file:",
     },

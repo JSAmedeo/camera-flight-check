@@ -106,7 +106,7 @@ Notes that matter for the procedure:
 
 ## Per-station admin setup (gear icon, top-right)
 
-The Settings screen is **password-protected by default** (`help123`) so
+The Settings screen is **password-protected by default** (`Santa2026`) so
 seasonal staff don't wander into camera limits or the RPS path — change it
 (or turn the lock off) under General → Settings password. Per-station items
 worth setting on first install: location number/station name, the exit app

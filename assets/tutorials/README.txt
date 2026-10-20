@@ -1,25 +1,26 @@
 Tutorial images for the Set Checklist "More info" popups.
 
-Drop PNG photos here named <cardKey>-<stepNumber>.png and the app shows
-them automatically (no code changes). Each checklist item's bullet points
-double as its tutorial steps, so the step count below matches the bullets
-on that item's card (plus a couple of extra reference photos for "camera",
-which has more than one valid mount style). Expected files:
+Drop PNG photos here named <cardKey>-1.png and the app shows them
+automatically (no code changes). ONE photo per checklist item — the popup is
+a single page: your photo at the top, then every bullet for that item listed
+underneath. Expected files, six in total:
 
-  clean-1.png     clean-2.png     clean-3.png
-  router-1.png    router-2.png    router-3.png
-  webcam-1.png    webcam-2.png    webcam-3.png
-  camera-1.png    camera-2.png    camera-3.png    camera-4.png    camera-5.png
-  framing-1.png   framing-2.png   framing-3.png
-  flash-1.png     flash-2.png     flash-3.png
+  clean-1.png
+  router-1.png
+  webcam-1.png
+  camera-1.png
+  framing-1.png
+  flash-1.png
 
-camera-4/5 are the "click through to find yours" mount-style photos
-(e.g. pole clamp mount vs. desk/counter mount) — see `extraSteps` on the
-camera item in strings.js.
+(Before 2026-10-19 the popup paged through one photo per bullet, so this list
+used to ask for 20 files named -1 through -5. Those extra numbers are no
+longer looked for. If you already shot them, the -1 of each set is the one
+that's used; the rest can be ignored or deleted.)
 
 Until a file exists, the app shows a placeholder naming the expected file.
-Bullet text (shown both on the card and as each step's title) is edited in
-strings.js (walk.items.<key>.bullets / .extraSteps).
+Bullet text (shown both on the card and in the popup) is edited in
+strings.js (walk.items.<key>.bullets, plus .extraSteps on the camera item —
+its two mount styles are now bullets rather than their own photo screens).
 
 One more image, same placeholder mechanism, used outside the Set Checklist:
 

@@ -119,7 +119,7 @@ function defaultSettings() {
     // of the shipped defaults. "Other" (however it's currently labeled)
     // triggers the free-text box in SkipReasonModal by text match, not
     // position, so reordering/renaming/removing it is safe.
-    skipReasons: ["Running late", "Equipment issue", "Other"],
+    skipReasons: ["Running Late", "Completed Earlier", "Equipment Issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
     // The grey-card escape hatch (REMEDIATION-PLAN.md CFC-04) reverts to
     // these instead of leaving the camera at whatever it happened to be set
@@ -198,7 +198,7 @@ function defaultSettings() {
     // fresh install is locked out of the box; the default password is meant
     // to be handed out with training materials, same as any other doc here.
     settingsPasswordEnabled: true,
-    settingsPassword: "help123",
+    settingsPassword: "Santa2026",
     // Persists the calibration photo + full analysis/plan/applied record for
     // every grey-card attempt under paths.diagnostics/calibrations/ -- see
     // REMEDIATION-PLAN.md CFC-06. On by default during field validation so a

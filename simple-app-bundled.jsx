@@ -828,8 +828,11 @@ function ScreenWalkAround({ checked, setChecked, onNext, onBack, onSkip }) {
 // assets/tutorials/<key>-<n>.png when the file exists; until then a
 // placeholder names the file so real equipment photos can drop in.
 // ============================================================
-function TutMedia({ itemKey, idx }) {
-  const src = `assets/tutorials/${itemKey}-${idx + 1}.png`;
+function TutMedia({ itemKey }) {
+  // One image per card, always `<key>-1.png`. The popup used to paginate a
+  // photo per bullet; it's a single page now, so only the first file is ever
+  // looked for -- see assets/tutorials/README.
+  const src = `assets/tutorials/${itemKey}-1.png`;
   const [ok, setOk] = React.useState(true);
   React.useEffect(() => { setOk(true); }, [src]);
   return (
@@ -852,25 +855,20 @@ function TutMedia({ itemKey, idx }) {
 
 }
 
+// One page: a single photo and every point as a bullet. It used to paginate --
+// a photo and a caption per bullet, with Back/Next and dots -- which made an
+// operator cycle screens to read three short lines they can take in at once.
 function WalkInfoModal({ item, onClose }) {
   const steps = item.steps || [];
-  const total = steps.length;
-  const [idx, setIdx] = React.useState(0);
-  const step = steps[idx] || {};
-
-  const next = () => idx < total - 1 ? setIdx(idx + 1) : onClose();
-  const prev = () => setIdx(Math.max(0, idx - 1));
 
   React.useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft") prev();
       e.stopPropagation();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [idx, onClose]);
+  }, [onClose]);
 
   return (
     <div className="s-info" onClick={onClose}>
@@ -881,34 +879,24 @@ function WalkInfoModal({ item, onClose }) {
         <div className="s-info-head">
           <div className="s-info-ic">{item.icon}</div>
           <div>
-            <div className="s-info-eyebrow">{S.walk.tutorial.eyebrow} · {idx + 1} {S.walk.tutorial.of} {total}</div>
+            <div className="s-info-eyebrow">{S.walk.tutorial.eyebrow}</div>
             <h3 className="s-info-title">{item.label}</h3>
           </div>
         </div>
 
-        <TutMedia itemKey={item.key} idx={idx} />
+        <TutMedia itemKey={item.key} />
 
-        <div className="s-tut-caption" key={"c" + idx}>
-          <b>{step.title}</b>
-          <span>{step.text}</span>
-        </div>
+        <ul className="s-tut-list">
+          {steps.map((s, i) =>
+          <li key={i}>
+              <b>{s.title}</b>
+              {s.text ? <span>{s.text}</span> : null}
+            </li>
+          )}
+        </ul>
 
-        <div className="s-tut-foot">
-          <button className="s-btn s-btn--ghost" onClick={prev} disabled={idx === 0}>
-            <SI.back size={16} /> {S.common.back}
-          </button>
-          <div className="s-tut-dots">
-            {Array.from({ length: total }, (_, i) =>
-            <button
-              key={i}
-              className={`s-tut-dot ${i === idx ? "s-tut-dot--on" : i < idx ? "s-tut-dot--done" : ""}`}
-              onClick={() => setIdx(i)}
-              aria-label={`Step ${i + 1}`} />
-            )}
-          </div>
-          <button className="s-btn s-btn--primary" onClick={next}>
-            {idx < total - 1 ? <>{S.common.next} <SI.arrow size={16} /></> : <>{S.common.gotIt}</>}
-          </button>
+        <div className="s-tut-foot s-tut-foot--single">
+          <button className="s-btn s-btn--primary" onClick={onClose}>{S.common.gotIt}</button>
         </div>
       </div>
     </div>);
@@ -3830,7 +3818,7 @@ function SimpleApp() {
     location: { number: "", name: "", station: "Camera" },
     paths: { completionLogs: "", testPhotos: "", diagnostics: "" },
     skipReasonPrompt: true,
-    skipReasons: ["Running late", "Equipment issue", "Other"],
+    skipReasons: ["Running Late", "Completed Earlier", "Equipment Issue", "Other"],
     cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
     cameraDefaults: { iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
     cameraPresets: [{ id: "baseline", name: "Baseline Default Settings", iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" }],
@@ -3844,7 +3832,7 @@ function SimpleApp() {
     helpAutoRecord: null,
     videoPlayerPath: "",
     settingsPasswordEnabled: true,
-    settingsPassword: "help123",
+    settingsPassword: "Santa2026",
     calibrationDiagnosticsEnabled: true,
   });
   const [settingsOpen, setSettingsOpen] = React.useState(false);
