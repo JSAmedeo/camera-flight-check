@@ -29,6 +29,21 @@ below are the whole procedure — an untouched machine taken through them
 launches clean, with no SmartScreen or Defender prompt. Validated end to end on
 a field machine 2026-09-24.
 
+### Setting a machine up by hand — use `First Launch.bat`
+
+For a one-off or test machine, unzip anywhere and **double-click
+`First Launch.bat`** (it sits at the top of the folder, next to the exe). It
+does step 5 below and then starts the app, so a hand-built machine gets the
+same clean first launch the Kaseya procedure produces.
+
+It prints what it did (`Unblocked 12 file(s)`, or `Nothing was blocked`),
+needs no admin rights, and is safe to run again — **run it again after
+dropping in a new version**, because the mark is per file and a new zip
+arrives tagged.
+
+It is a convenience for manual setups, not a replacement for the procedure
+below: Kaseya should still run step 5 itself rather than invoking this file.
+
 ### Kaseya deployment procedure
 
 | # | Step | Detail |

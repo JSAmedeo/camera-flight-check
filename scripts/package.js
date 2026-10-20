@@ -22,6 +22,17 @@ async function main() {
   // 1. fresh packaged app (builds camera-host too)
   run("node scripts/dist.js");
 
+  // 1b. drop the first-launch helper at the ROOT of the packaged folder, next
+  // to the exe, so it's there when the zip is extracted. It can't be shipped
+  // via electron-packager (that only places files under resources/), and the
+  // folder is rebuilt from scratch by dist.js on every run, so this has to
+  // happen after step 1 and before the zip in step 2.
+  fs.copyFileSync(
+    path.join(root, "scripts", "first-launch.bat"),
+    path.join(appDir, "First Launch.bat")
+  );
+  console.log("Added: First Launch.bat");
+
   // 2. portable zip (remove zips from older versions so only the current one exists)
   for (const f of fs.readdirSync(path.join(root, "dist"))) {
     if (/^CameraFlightCheck-.*-portable\.zip$/.test(f)) {
