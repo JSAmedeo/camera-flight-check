@@ -12,6 +12,12 @@ underneath. Expected files, six in total:
   framing-1.png
   flash-1.png
 
+Where an item covers more than one kind of equipment — different camera grips
+or mounts, different router models — make the single photo a COMPOSITE: one
+image showing each variant side by side, rather than trying to get several
+files to display. One file per item is all the popup will look for, so the
+compositing happens in whatever you edit the photo in, not in the app.
+
 (Before 2026-10-19 the popup paged through one photo per bullet, so this list
 used to ask for 20 files named -1 through -5. Those extra numbers are no
 longer looked for. If you already shot them, the -1 of each set is the one

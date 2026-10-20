@@ -129,7 +129,7 @@ This is worth stating plainly because it silently changes how several decisions 
 
 ## Upcoming milestones (agreed 2026-09-26)
 
-**1. Real photos for the 6 Set Checklist cards.** Purely a content drop — the pipeline has been ready since 2026-07-16. PNGs go in `assets/tutorials/` named `<cardKey>-<n>.png`; `assets/tutorials/README` lists all 20 expected filenames and the app picks them up with no code change. Keys: `clean`, `router`, `webcam`, `camera` (5, covering two mount styles), `framing`, `flash`.
+**1. Real photos for the 6 Set Checklist cards.** Purely a content drop — the pipeline has been ready since 2026-07-16. **One photo per card, six in total**: PNGs go in `assets/tutorials/` named `<cardKey>-1.png` for keys `clean`, `router`, `webcam`, `camera`, `framing`, `flash`, and the app picks them up with no code change. (The popup paged through 20 files until it became a single page on 2026-10-19.) Where a card covers several kinds of equipment — camera grips/mounts, router models — the photo will be a **composite** showing the variants side by side, since only one image per card is displayed. `assets/tutorials/README` has the details.
 
 **2. Webcam checker utility — design only, nothing to be built yet.**
 
