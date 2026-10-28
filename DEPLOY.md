@@ -156,6 +156,19 @@ three File Output Paths if they shouldn't point at the default
   firewall question, not an intermittent one. Note ~17 real venues (mostly zoos, aquariums and
   other attractions) genuinely have no managers listed at source — one card or none is correct
   there, not a fault.
+- **A new build's changed default doesn't show up** (password still the old one, a
+  list still showing the old entries) — the station has a saved `settings.json`, and a
+  saved file always outranks the build's defaults: single values lose to the saved one,
+  and lists are replaced wholesale. The build is almost certainly fine; confirm by
+  checking `dist\Camera Flight Check-win32-x64\resources\app\main.js` before suspecting
+  packaging. To fix a station without losing its location number, station name, output
+  paths or feed settings, remove just the affected keys and let the defaults take over:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts\reset-settings-keys.ps1 -Keys settingsPassword,skipReasons
+  ```
+  It keeps a `settings.json.bak`, supports `-WhatIf`, and the app picks the defaults up on
+  the next launch. Note this only affects machines that have saved Settings at least once —
+  a freshly deployed station has no `settings.json` and gets the new defaults automatically.
 - **Grey-card correction looks wrong** (bad white balance, unexpected result, or the box
   keeps getting rejected as "doesn't look like a grey card") — every attempt is saved
   under Settings → General → File Output Paths → Diagnostics →
