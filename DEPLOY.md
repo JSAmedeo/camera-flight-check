@@ -36,8 +36,17 @@ Three field-tech files sit at the root of the extracted folder, next to the exe:
 | File | What it's for |
 |---|---|
 | `First Launch.bat` | Clears Mark of the Web and starts the app — for hand-built machines (see below) |
-| `Check Camera Helper.bat` | Diagnoses **"Camera helper is not running"** — double-click it, app closed |
+| `Check Camera Helper.bat` | Diagnoses **"Camera helper is not running"** — double-click it |
 | `diagnose-camera-helper.ps1` | What that .bat runs; can be called directly |
+
+`Check Camera Helper.bat` is written for a support agent, not a developer: it explains
+what it's for, refuses nothing it doesn't have to, and drops a **report folder on the
+Desktop** — `camera-helper-report_<PC>_<date>` holding `report.txt` (the full on-screen
+output, with machine name and Windows version) and a copy of `camera-host.log`. The
+closing screen tells the agent to zip that folder and email it, so the log reaches IT
+instead of a verdict being read out over the phone. If the app is open it offers to run
+everything except the live camera test rather than turning the agent away — the log scan
+that names the cause doesn't need the app closed.
 
 They're shipped deliberately: a station has the deploy folder and nothing else, so a
 troubleshooting tool that lives only in the repo can't be run where it's needed. Both are

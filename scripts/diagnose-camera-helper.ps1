@@ -37,8 +37,28 @@
 #>
 param(
   [string] $InstallRoot = "",
-  [switch] $SkipLaunchTest
+  [switch] $SkipLaunchTest,
+  [switch] $Report
 )
+
+# -Report collects everything a support agent needs to hand over in one
+# folder on the Desktop: the full on-screen output plus a copy of the
+# helper's own log. Reading a verdict over the phone loses the log, which is
+# the part that actually names the cause.
+$reportDir = $null
+if ($Report) {
+  try {
+    $desktop = [Environment]::GetFolderPath('Desktop')
+    if (-not $desktop) { $desktop = $env:USERPROFILE }
+    $stamp = Get-Date -Format 'yyyy-MM-dd_HHmm'
+    $reportDir = Join-Path $desktop "camera-helper-report_${env:COMPUTERNAME}_$stamp"
+    New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+    Start-Transcript -Path (Join-Path $reportDir "report.txt") -Force | Out-Null
+  } catch {
+    $reportDir = $null
+    Write-Host "   (Could not start a report file -- continuing on screen only.)" -ForegroundColor Yellow
+  }
+}
 
 # Work out which install to inspect. When this file sits beside the exe (the
 # shipped case) its own folder IS the install, so the script works wherever
@@ -348,3 +368,28 @@ Write-Host "   Note: 'Try again' on that screen cannot recover once the helper"
 Write-Host "   has exited -- the app only spawns it at startup. After fixing"
 Write-Host "   anything above, CLOSE AND REOPEN the app."
 Write-Host ""
+
+# --------------------------------------------------------------- report
+if ($reportDir) {
+  # Take the helper's own log with us. The on-screen scan names the cause,
+  # but the log is what the dev team actually needs to read, and it is the
+  # one artifact a station will have overwritten by the next field drop.
+  if ($log -and (Test-Path -LiteralPath $log)) {
+    try {
+      Copy-Item -LiteralPath $log -Destination (Join-Path $reportDir "camera-host.log") -Force
+      Write-Host "   Included a copy of camera-host.log in the report."
+    } catch {
+      Write-Host "   Could not copy camera-host.log: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+  }
+  try { Stop-Transcript | Out-Null } catch {}
+  Write-Host ""
+  Write-Host "   ============================================================" -ForegroundColor Cyan
+  Write-Host "    REPORT SAVED TO YOUR DESKTOP" -ForegroundColor Cyan
+  Write-Host "    $reportDir" -ForegroundColor White
+  Write-Host ""
+  Write-Host "    Right-click that folder > Send to > Compressed (zipped)" -ForegroundColor Cyan
+  Write-Host "    folder, and email the .zip to IT." -ForegroundColor Cyan
+  Write-Host "   ============================================================" -ForegroundColor Cyan
+  Write-Host ""
+}
