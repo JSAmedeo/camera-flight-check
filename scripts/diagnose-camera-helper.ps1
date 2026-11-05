@@ -180,12 +180,39 @@ if (-not $log) {
   Warn "or Diagnostics points somewhere else (Settings > File Output Paths)."
 } else {
   Good "Log: $log"
+
+  # Scan the WHOLE file for abnormal exits before printing a tail. The crash
+  # being hunted is often older than the last 25 lines -- a tail alone can
+  # show a run of clean exit-0 shutdowns and read as "nothing ever went
+  # wrong" while the actual crash sits further up the file.
+  $allLines = @(Get-Content -LiteralPath $log)
+  $crashes  = @($allLines | Where-Object { $_ -match 'helper exited (-?\d+)' -and $Matches[1] -ne '0' })
+  Write-Host ""
+  if ($crashes.Count -eq 0) {
+    Good "No abnormal helper exit anywhere in this log ($($allLines.Count) lines) -- every recorded exit is a clean 0."
+    Warn "So the helper has never crashed on THIS machine while this log was kept."
+    Warn "If you are chasing a 'Camera helper is not running' screen, either it"
+    Warn "happened on a different machine, or the app was still open after a"
+    Warn "finished run released the helper (restarting the app clears that)."
+  } else {
+    Bad "$($crashes.Count) abnormal helper exit(s) recorded in this log. Most recent:"
+    Write-Host "        $($crashes[-1])" -ForegroundColor Red
+    $idx = [array]::IndexOf($allLines, $crashes[-1])
+    if ($idx -gt 0) {
+      Write-Host "   --- what led up to it ---" -ForegroundColor DarkGray
+      $from = [Math]::Max(0, $idx - 15)
+      $allLines[$from..$idx] | ForEach-Object { Write-Host "   $_" -ForegroundColor DarkGray }
+      Write-Host "   --- end ---" -ForegroundColor DarkGray
+    }
+    $problems += "The helper has crashed on this machine -- see the abnormal exit above."
+  }
+
   Write-Host ""
   Write-Host "   --- last 25 lines ---" -ForegroundColor DarkGray
   Get-Content -LiteralPath $log -Tail 25 | ForEach-Object { Write-Host "   $_" -ForegroundColor DarkGray }
   Write-Host "   --- end ---" -ForegroundColor DarkGray
 
-  $exitLine = Get-Content -LiteralPath $log -Tail 200 |
+  $exitLine = $allLines |
     Where-Object { $_ -match 'helper exited (-?\d+)' } | Select-Object -Last 1
   if ($exitLine -and $exitLine -match 'helper exited (-?\d+)') {
     $code = [int]$Matches[1]
