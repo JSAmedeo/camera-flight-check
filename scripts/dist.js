@@ -33,10 +33,41 @@ fs.cpSync(path.join(root, "camera-host", "bin", "Release"), stage, { recursive: 
 //
 // LICENSE and THIRD-PARTY-NOTICES.md deliberately stay in: they need to ship
 // with the binaries they cover.
+//
+// NO `|` ALTERNATION IN THESE PATTERNS. The command below goes through a
+// shell, and cmd.exe splits on a pipe that PowerShell's quoting does not
+// protect, so the build failed with "'CONTEXT' is not recognized as an
+// internal or external command" when run from PowerShell while working fine
+// from Git Bash. One regex per line costs nothing, is easier to grep when
+// asking "is this file excluded?", and keeps the build shell-independent.
 const IGNORES = [
-  "^/(dist|build|camera-host|\\.claude|sessions|field-test logs)",
-  "^/(full-)?location-json-example\\.json$",
-  "^/(CLAUDE|CONTEXT|README|DEPLOY|REMEDIATION-PLAN|DESIGN-SNAPSHOT.*)\\.md$",
+  // build output and tooling
+  "^/dist",
+  "^/build",
+  "^/camera-host",
+  "^/\\.claude",
+  "^/sessions",
+  // The whole scripts folder stays out. Nothing in it is needed at runtime,
+  // and reset-settings-keys.ps1 rewrites a station's settings.json -- an
+  // operator finding that is a worse problem than the one it solves. The two
+  // field-tech tools people DO need (Check Camera Helper.bat and
+  // diagnose-camera-helper.ps1) are copied from here to the packaged ROOT by
+  // scripts/package.js, next to the exe, which is the only place a support
+  // agent should be looking. Caught 2026-11-05 by checking the packaged
+  // output rather than the repo -- see gotcha #26.
+  "^/scripts",
+  // real field/company data -- see the note above, this is the control
+  "^/field-test logs",
+  "^/location-json-example\\.json$",
+  "^/full-location-json-example\\.json$",
+  // internal docs
+  "^/CLAUDE\\.md$",
+  "^/CONTEXT\\.md$",
+  "^/README\\.md$",
+  "^/DEPLOY\\.md$",
+  "^/REMEDIATION-PLAN\\.md$",
+  "^/DESIGN-SNAPSHOT.*\\.md$",
+  // headless-verification scratch copy (gotcha #19)
   "__verify\\.html",
 ];
 run(
