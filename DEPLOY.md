@@ -133,6 +133,33 @@ three File Output Paths if they shouldn't point at the default
 
 - **"We can't find the camera"** — check cable/power, make sure no other app has the
   camera open, then Try again. Webcams are ignored by design.
+- **"We can't find the camera" with the sub-line "Camera helper is not running"** — a
+  *different* fault from the one above, and the sub-line is the whole diagnosis. It means
+  `CameraHost.exe` was found and launched (a missing helper falls back to the simulator and
+  shows a **Simulator** badge instead), then **exited**. So the build and the package are
+  fine — the question is why the helper died. Run this on the station:
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File scripts\diagnose-camera-helper.ps1
+  ```
+  It checks the whole chain in order — orphaned helper processes, Mark of the Web on
+  `resources\camera-host`, .NET 4.8, the vendored DLLs, other apps holding the camera —
+  tails `camera-host.log`, decodes the last exit code, and then actually launches the
+  helper and sends it a `detect`, which surfaces the error Windows hides when the app
+  spawns it with `windowsHide`. Close the app first; pass `-InstallRoot` if the app isn't
+  in `C:\preflight-ops-check`. Most likely causes, in field order:
+  1. **Mark of the Web on the helper.** The top suspect, because it looks like a working
+     install: step 5 of the Kaseya procedure was skipped, somebody clicked **Run anyway**
+     to get the *main* exe open, and that choice does not carry to a child process. The app
+     launches fine and the helper is killed silently. Fix: `Get-ChildItem "C:\preflight-ops-check" -Recurse -File | Unblock-File`.
+  2. **.NET Framework 4.8 missing** on an older image — the helper won't start at all
+     (exit `0xC0000135`).
+  3. **Antivirus quarantining `CameraHost.exe`** — an unsigned exe that drives USB.
+  4. **A clean exit (code 0)** — the helper was told to quit at the end of a run and the
+     camera screen was reached again without relaunching. Restarting the app clears it.
+
+  **"Try again" on that screen cannot recover from this**, whatever the cause: the app only
+  spawns the helper at startup (`setupCamera` in `main.js`), so once the process is gone every
+  retry hits the same dead handle. Always close and reopen the app after fixing anything.
 - **Yellow "camera is in Auto mode" warning** — turn the mode dial to M and press Re-check.
 - **App opens as "Simulator"** (badge in the top bar) — the camera helper is missing
   from the package; rebuild with `npm run package`. Forcing simulator on purpose:
