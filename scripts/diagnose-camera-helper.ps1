@@ -24,16 +24,34 @@
        test, because it surfaces the error Windows hides when the app spawns
        it with windowsHide
 
+  This file SHIPS INSIDE the portable build, next to the exe, because a
+  diagnostic that is not on the machine when you need it is useless -- the
+  station has the deploy folder and nothing else. Double-click
+  "Check Camera Helper.bat" beside it, or run this directly.
+
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File diagnose-camera-helper.ps1
+  powershell -ExecutionPolicy Bypass -File "C:\preflight-ops-check\diagnose-camera-helper.ps1"
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File diagnose-camera-helper.ps1 -InstallRoot "D:\preflight-ops-check"
 #>
 param(
-  [string] $InstallRoot = "C:\preflight-ops-check",
+  [string] $InstallRoot = "",
   [switch] $SkipLaunchTest
 )
+
+# Work out which install to inspect. When this file sits beside the exe (the
+# shipped case) its own folder IS the install, so the script works wherever
+# the build was extracted rather than assuming the standard path. Run from the
+# repo's scripts\ folder there is no exe next to it, so fall back to the path
+# the Kaseya procedure creates.
+if (-not $InstallRoot) {
+  if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "Camera Flight Check.exe")) {
+    $InstallRoot = $PSScriptRoot
+  } else {
+    $InstallRoot = "C:\preflight-ops-check"
+  }
+}
 
 $ErrorActionPreference = 'Continue'
 $problems = @()

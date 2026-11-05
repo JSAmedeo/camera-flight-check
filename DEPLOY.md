@@ -29,6 +29,20 @@ below are the whole procedure — an untouched machine taken through them
 launches clean, with no SmartScreen or Defender prompt. Validated end to end on
 a field machine 2026-09-24.
 
+### What ships in the zip besides the app
+
+Three field-tech files sit at the root of the extracted folder, next to the exe:
+
+| File | What it's for |
+|---|---|
+| `First Launch.bat` | Clears Mark of the Web and starts the app — for hand-built machines (see below) |
+| `Check Camera Helper.bat` | Diagnoses **"Camera helper is not running"** — double-click it, app closed |
+| `diagnose-camera-helper.ps1` | What that .bat runs; can be called directly |
+
+They're shipped deliberately: a station has the deploy folder and nothing else, so a
+troubleshooting tool that lives only in the repo can't be run where it's needed. Both are
+read-only or self-contained — nothing that rewrites a station's config ships here.
+
 ### Setting a machine up by hand — use `First Launch.bat`
 
 For a one-off or test machine, unzip anywhere and **double-click
@@ -137,16 +151,21 @@ three File Output Paths if they shouldn't point at the default
   *different* fault from the one above, and the sub-line is the whole diagnosis. It means
   `CameraHost.exe` was found and launched (a missing helper falls back to the simulator and
   shows a **Simulator** badge instead), then **exited**. So the build and the package are
-  fine — the question is why the helper died. Run this on the station:
+  fine — the question is why the helper died. **Close the app**, then double-click
+  **`Check Camera Helper.bat`** in the install folder (it ships in the zip, next to the
+  exe, alongside `First Launch.bat`). It refuses to run while the app is open, since the
+  app owns the helper. From a command prompt instead:
   ```powershell
-  powershell -ExecutionPolicy Bypass -File scripts\diagnose-camera-helper.ps1
+  powershell -ExecutionPolicy Bypass -File "C:\preflight-ops-check\diagnose-camera-helper.ps1"
   ```
-  It checks the whole chain in order — orphaned helper processes, Mark of the Web on
-  `resources\camera-host`, .NET 4.8, the vendored DLLs, other apps holding the camera —
-  tails `camera-host.log`, decodes the last exit code, and then actually launches the
-  helper and sends it a `detect`, which surfaces the error Windows hides when the app
-  spawns it with `windowsHide`. Close the app first; pass `-InstallRoot` if the app isn't
-  in `C:\preflight-ops-check`. Most likely causes, in field order:
+  The script takes its install root from **its own folder**, so it works wherever the
+  build was extracted — no `-InstallRoot` needed unless you're running the copy in the
+  repo's `scripts\` folder against a station elsewhere. It checks the whole chain in order
+  — orphaned helper processes, Mark of the Web on `resources\camera-host`, .NET 4.8, the
+  vendored DLLs, other apps holding the camera — tails `camera-host.log`, decodes the last
+  exit code, and then actually launches the helper and sends it a `detect`, which surfaces
+  the error Windows hides when the app spawns it with `windowsHide`. It is read-only: it
+  changes no settings and deletes nothing. Most likely causes, in field order:
   1. **Mark of the Web on the helper.** The top suspect, because it looks like a working
      install: step 5 of the Kaseya procedure was skipped, somebody clicked **Run anyway**
      to get the *main* exe open, and that choice does not carry to a child process. The app
