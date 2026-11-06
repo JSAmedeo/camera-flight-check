@@ -77,4 +77,14 @@ run(
   '--extra-resource="build/camera-host"'
 );
 
+// 4. electron-packager writes a root-level `version` file holding the
+// ELECTRON version (31.7.7), which reads like the app's version to anyone
+// checking a station. Nothing reads it at runtime, so it carries ours instead,
+// with Electron's kept underneath for reference.
+const outDir = path.join(root, "dist", "Camera Flight Check-win32-x64");
+const versionFile = path.join(outDir, "version");
+const electronVersion = fs.readFileSync(versionFile, "utf8").trim();
+const appVersion = require(path.join(root, "package.json")).version;
+fs.writeFileSync(versionFile, `Camera Flight Check ${appVersion}\r\nElectron ${electronVersion}\r\n`);
+
 console.log("\nPackaged: dist\\Camera Flight Check-win32-x64\\Camera Flight Check.exe");

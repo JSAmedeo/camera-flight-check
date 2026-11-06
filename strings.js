@@ -45,6 +45,7 @@ window.CFC_STRINGS = {
   // ---- admin settings screen (gear icon) ----
   settingsScreen: {
     title: "Application Settings",
+    version: "Version {version}",
     cancel: "Cancel",
     save: "Save changes",
     saving: "Saving…",

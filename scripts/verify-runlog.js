@@ -98,6 +98,10 @@ try {
   const problems = [];
   if (!rec.runId) problems.push("runId is missing");
   if (!rec.startedAt) problems.push("startedAt is missing");
+  const pkgVersion = require(path.join(__dirname, "..", "package.json")).version;
+  if (rec.appVersion !== pkgVersion) {
+    problems.push(`appVersion is ${JSON.stringify(rec.appVersion)}, expected ${JSON.stringify(pkgVersion)}`);
+  }
   if (rec.locationNumber !== LOCATION.number) {
     problems.push(`locationNumber is ${JSON.stringify(rec.locationNumber)}, expected ${JSON.stringify(LOCATION.number)}`);
   }

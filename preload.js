@@ -6,9 +6,13 @@ const { contextBridge, ipcRenderer } = require("electron");
 // uses this to decide whether the global keyboard-shortcut bypass (CFC-03)
 // should exist at all.
 const isPackaged = ipcRenderer.sendSync("app:isPackagedSync");
+// Same pattern -- package.json's version, shown in the Settings header so a
+// field tech can confirm a station's build without opening file properties.
+const appVersion = ipcRenderer.sendSync("app:versionSync");
 
 contextBridge.exposeInMainWorld("cfc", {
   isPackaged,
+  appVersion,
   minimize: () => ipcRenderer.send("win:minimize"),
   close: () => ipcRenderer.send("win:close"),
   launchRps: () => ipcRenderer.invoke("app:launchRps"),

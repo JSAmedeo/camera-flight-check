@@ -2715,7 +2715,12 @@ function SettingsScreen({ settings, onSave, onClose, locked, onUnlock }) {
         <button className="s-info-close" onClick={onClose} aria-label={S.common.close}>
           <SI.close size={18} />
         </button>
-        <h2 className="s-settings-title">{T.title}</h2>
+        <h2 className="s-settings-title">
+          {T.title}
+          {window.cfc && window.cfc.appVersion &&
+          <span className="s-settings-version">{fmt(T.version, { version: window.cfc.appVersion })}</span>
+          }
+        </h2>
 
         <div className="s-settings-content-wrap">
         <div className={`s-settings-flex ${locked ? "s-settings-blur" : ""}`}>

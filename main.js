@@ -479,7 +479,9 @@ function setupCamera() {
   // Lives in the per-user app data folder (e.g. %APPDATA%\camera-flight-check\check-runs.jsonl).
   const runsFile = path.join(app.getPath("userData"), "check-runs.jsonl");
   ipcMain.handle("runs:save", (_e, event) => {
-    const record = { ...event, savedAt: new Date().toISOString() };
+    // appVersion is stamped here rather than in the renderer so every record
+    // type carries it without each caller remembering to add it.
+    const record = { ...event, appVersion: app.getVersion(), savedAt: new Date().toISOString() };
     fs.appendFileSync(runsFile, JSON.stringify(record) + "\n");
     // Also fan out to a per-run session file in the admin-configured data
     // folder — the one a field manager can actually browse to, and the one
@@ -568,6 +570,7 @@ function createWindow() {
   // must not exist in packaged/field builds). `electron .` (dev, headless
   // verification) is always unpackaged, so this stays permissive there.
   ipcMain.on("app:isPackagedSync", (e) => { e.returnValue = app.isPackaged; });
+  ipcMain.on("app:versionSync", (e) => { e.returnValue = app.getVersion(); });
   win.loadFile(path.join(__dirname, process.argv.includes("--verify") ? "__verify.html" : "Camera Flight Check.html"));
 
   win.once("ready-to-show", () => {
