@@ -433,8 +433,15 @@ try {
 // Only one copy may run — a second instance would fight over the camera USB
 // session, which presents as "can't read settings." (Automated verification
 // runs skip the lock so they can run beside a dev instance.)
+// app.quit() before ready does NOT stop whenReady from firing (Electron 31),
+// so the losing copy has to be kept out of startup explicitly -- otherwise
+// its setupCamera() taskkills the running copy's helper as an "orphan" and
+// that copy is left on "Camera helper is not running" (location 0011,
+// 2026-11-06: a double-click on a slow-starting station).
+let lostInstanceLock = false;
 if (!process.argv.some((a) => a.startsWith("--screenshot"))) {
   if (!app.requestSingleInstanceLock()) {
+    lostInstanceLock = true;
     app.quit();
   } else {
     app.on("second-instance", () => {
@@ -619,6 +626,7 @@ function startDirectoryRefresh(win) {
 }
 
 app.whenReady().then(() => {
+  if (lostInstanceLock) return;
   setupSettings();
   pruneCalibrationDiagnostics();
   setupCamera();

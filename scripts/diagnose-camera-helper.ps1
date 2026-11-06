@@ -85,6 +85,12 @@ function Warn($t)    { Write-Host "   --   $t" -ForegroundColor Yellow }
 Write-Host ""
 Write-Host "Camera helper diagnostic" -ForegroundColor White
 Write-Host "Install root: $InstallRoot"
+$appVersion = $null
+try {
+  $pkg = Join-Path $InstallRoot "resources\app\package.json"
+  $appVersion = (Get-Content -LiteralPath $pkg -Raw | ConvertFrom-Json).version
+} catch {}
+Write-Host "App version:  $(if ($appVersion) { $appVersion } else { 'unknown' })"
 
 # --------------------------------------------------------------- 1. app running
 Section "App and helper processes"
@@ -206,16 +212,45 @@ if (-not $log) {
   # show a run of clean exit-0 shutdowns and read as "nothing ever went
   # wrong" while the actual crash sits further up the file.
   $allLines = @(Get-Content -LiteralPath $log)
-  $crashes  = @($allLines | Where-Object { $_ -match 'helper exited (-?\d+)' -and $Matches[1] -ne '0' })
+  $abnormal = @($allLines | Where-Object { $_ -match 'helper exited (-?\d+)' -and $Matches[1] -ne '0' })
+
+  # Exit 1 sitting right beside "killed orphaned CameraHost.exe" is not a
+  # crash: a second copy of the app started and its orphan cleanup force-closed
+  # the first copy's working helper (location 0011, 2026-11-06). Fixed in
+  # 1.5.5; on older builds it presents as "Camera helper is not running".
+  $killed  = @()
+  $crashes = @()
+  foreach ($line in $abnormal) {
+    $i = [array]::IndexOf($allLines, $line)
+    $lo = [Math]::Max(0, $i - 3); $hi = [Math]::Min($allLines.Count - 1, $i + 3)
+    $near = ($allLines[$lo..$hi] -match 'killed orphaned CameraHost\.exe').Count -gt 0
+    if ($line -match 'helper exited 1$' -and $near) { $killed += $line } else { $crashes += $line }
+  }
+
   Write-Host ""
+  if ($killed.Count -gt 0) {
+    Warn "$($killed.Count) helper shutdown(s) caused by the app being opened a second time. Most recent:"
+    Write-Host "        $($killed[-1])" -ForegroundColor Yellow
+    Warn "This is NOT a crash. Someone opened the app again while it was still"
+    Warn "starting (usually a double-click), and the second copy closed the first"
+    Warn "copy's camera helper. The first window then shows 'Camera helper is not running'."
+    if ($appVersion -and [version]$appVersion -ge [version]'1.5.5') {
+      Warn "This build ($appVersion) has the fix, so these lines are from before the update."
+    } else {
+      $problems += "The app was opened twice and shut down its own camera helper. Update this station to 1.5.5 or later, which fixes it. Until then: open the app once and wait for the window."
+    }
+    Write-Host ""
+  }
   if ($crashes.Count -eq 0) {
-    Good "No abnormal helper exit anywhere in this log ($($allLines.Count) lines) -- every recorded exit is a clean 0."
+    Good "No helper crash anywhere in this log ($($allLines.Count) lines)."
     Warn "So the helper has never crashed on THIS machine while this log was kept."
-    Warn "If you are chasing a 'Camera helper is not running' screen, either it"
-    Warn "happened on a different machine, or the app was still open after a"
-    Warn "finished run released the helper (restarting the app clears that)."
+    if ($killed.Count -eq 0) {
+      Warn "If you are chasing a 'Camera helper is not running' screen, either it"
+      Warn "happened on a different machine, or the app was still open after a"
+      Warn "finished run released the helper (restarting the app clears that)."
+    }
   } else {
-    Bad "$($crashes.Count) abnormal helper exit(s) recorded in this log. Most recent:"
+    Bad "$($crashes.Count) helper crash(es) recorded in this log. Most recent:"
     Write-Host "        $($crashes[-1])" -ForegroundColor Red
     $idx = [array]::IndexOf($allLines, $crashes[-1])
     if ($idx -gt 0) {
@@ -224,7 +259,7 @@ if (-not $log) {
       $allLines[$from..$idx] | ForEach-Object { Write-Host "   $_" -ForegroundColor DarkGray }
       Write-Host "   --- end ---" -ForegroundColor DarkGray
     }
-    $problems += "The helper has crashed on this machine -- see the abnormal exit above."
+    $problems += "The helper has crashed on this machine -- see the crash above."
   }
 
   Write-Host ""
@@ -238,7 +273,8 @@ if (-not $log) {
     $code = [int]$Matches[1]
     Write-Host ""
     switch ($code) {
-      0           { Warn "Last exit code 0 -- a CLEAN shutdown. The helper was told to quit (end of a run, or app handoff) and the screen was reached again without relaunching the app. Restarting the app fixes this one." }
+      0           { Good "Last exit code 0 -- the most recent session ended normally." ; Warn "If 'Camera helper is not running' showed up after that, the app was left open after a finished run. Restarting the app clears it." }
+      1           { Warn "Last exit code 1 -- the helper was force-closed, most often by the app being opened a second time (see above)." }
       -1073741515 { Bad  "Exit 0xC0000135 -- a required DLL could not be loaded. Usually .NET 4.8 or the VC++140 runtimes." }
       -1073741701 { Bad  "Exit 0xC000007B -- bad image format. A 64-bit DLL got mixed into the 32-bit helper folder." }
       -532462766  { Bad  "Exit 0xE0434352 -- unhandled .NET exception at startup. The lines above should name it." }

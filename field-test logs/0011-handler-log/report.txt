@@ -1,0 +1,125 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261106130511
+Username: MALL0011-Camera\CHP
+RunAs User: MALL0011-Camera\CHP
+Configuration Name: 
+Machine: MALL0011-Camera (Microsoft Windows NT 10.0.19045.0)
+Host Application: powershell -NoProfile -ExecutionPolicy Bypass -File C:\preflight-ops-check\diagnose-camera-helper.ps1 -Report
+Process ID: 7536
+PSVersion: 5.1.19041.5965
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.19041.5965
+BuildVersion: 10.0.19041.5965
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+Camera helper diagnostic
+Install root: C:\preflight-ops-check
+
+== App and helper processes
+   OK   App is not running.
+   OK   No orphaned CameraHost.exe.
+
+== Helper files
+   OK   CameraHost.exe present (24064 bytes)
+   OK   All vendored DLLs present.
+
+== Mark of the Web (SmartScreen)
+   OK   Nothing in the helper folder is blocked.
+
+== .NET Framework 4.8
+   OK   .NET Framework 4.8+ installed (Release 528372).
+
+== Other apps that could hold the camera
+   OK   No known camera-owning app running.
+
+== Helper log (what happened on the last spawn)
+   OK   Log: C:\preflight-ops-check\Diagnostics\camera-host.log
+
+   BAD  1 abnormal helper exit(s) recorded in this log. Most recent:
+        2026-11-06T16:12:37.231Z [camera-bridge] helper exited 1
+   --- what led up to it ---
+   2026-11-06T15:57:56.516Z [camera-host] WaitForInit: timed out; proceeding anyway
+   2026-11-06T16:10:36.360Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+   2026-11-06T16:10:37.245Z [camera-host] CameraHost starting
+   2026-11-06T16:10:56.142Z [camera-host] Camera connected: Canon EOS Rebel T7 via CanonSDKBase (IsConnected=True)
+   2026-11-06T16:10:57.876Z [camera-host] Camera connected: Integrated Webcam via WebCameraDevice (IsConnected=True)
+   2026-11-06T16:10:58.806Z [camera-host] Camera connected: USB Camera via WebCameraDevice (IsConnected=True)
+   2026-11-06T16:10:59.130Z [camera-host]   candidate: Canon EOS Rebel T7 [CanonSDKBase] IsConnected=True real=True prio=2
+   [camera-host]   candidate: Integrated Webcam [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   candidate: USB Camera [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   _connectedDevice: CanonSDKBase
+   [camera-host] Device claimed by driver: CameraControl.Devices.Canon.CanonSDKBase
+   2026-11-06T16:11:06.109Z [camera-host] Camera sessions released
+   2026-11-06T16:11:06.127Z [camera-host] CameraHost exiting
+   2026-11-06T16:11:06.927Z [camera-bridge] helper exited 0
+   2026-11-06T16:12:34.848Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+   2026-11-06T16:12:37.231Z [camera-bridge] helper exited 1
+   --- end ---
+
+   --- last 25 lines ---
+   2026-11-06T16:10:59.130Z [camera-host]   candidate: Canon EOS Rebel T7 [CanonSDKBase] IsConnected=True real=True prio=2
+   [camera-host]   candidate: Integrated Webcam [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   candidate: USB Camera [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   _connectedDevice: CanonSDKBase
+   [camera-host] Device claimed by driver: CameraControl.Devices.Canon.CanonSDKBase
+   2026-11-06T16:11:06.109Z [camera-host] Camera sessions released
+   2026-11-06T16:11:06.127Z [camera-host] CameraHost exiting
+   2026-11-06T16:11:06.927Z [camera-bridge] helper exited 0
+   2026-11-06T16:12:34.848Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+   2026-11-06T16:12:37.231Z [camera-bridge] helper exited 1
+   2026-11-06T16:12:37.280Z [camera-bridge] killed orphaned CameraHost.exe from a previous session
+   2026-11-06T16:12:37.303Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+   2026-11-06T17:11:18.011Z [camera-bridge] spawning helper: C:\preflight-ops-check\resources\camera-host\CameraHost.exe
+   2026-11-06T17:11:18.245Z [camera-host] CameraHost starting
+   2026-11-06T17:11:28.192Z [camera-host] Camera connected: Canon EOS Rebel T7 via CanonSDKBase (IsConnected=True)
+   2026-11-06T17:11:29.892Z [camera-host] Camera connected: Integrated Webcam via WebCameraDevice (IsConnected=True)
+   2026-11-06T17:11:30.750Z [camera-host] Camera connected: USB Camera via WebCameraDevice (IsConnected=True)
+   2026-11-06T17:11:31.028Z [camera-host]   candidate: Canon EOS Rebel T7 [CanonSDKBase] IsConnected=True real=True prio=2
+   [camera-host]   candidate: Integrated Webcam [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   candidate: USB Camera [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   _connectedDevice: CanonSDKBase
+   [camera-host] Device claimed by driver: CameraControl.Devices.Canon.CanonSDKBase
+   2026-11-06T17:13:14.447Z [camera-host] Camera sessions released
+   2026-11-06T17:13:14.462Z [camera-host] CameraHost exiting
+   2026-11-06T17:13:15.269Z [camera-bridge] helper exited 0
+   --- end ---
+
+   --   Last exit code 0 -- a CLEAN shutdown. The helper was told to quit (end of a run, or app handoff) and the screen was reached again without relaunching the app. Restarting the app fixes this one.
+
+== Launch test (running the helper directly)
+   Starting CameraHost.exe and sending it a detect...
+   Reply: {"id":1,"ok":true,"data":{"connected":true,"model":"Canon EOS Rebel T7","serial":"902078001113","driver":"CanonSDKBase"},"error":null}
+   OK   The helper works and SEES THE CAMERA.
+
+   --- helper stderr ---
+   [camera-host] CameraHost starting
+   [camera-host] Camera connected: Canon EOS Rebel T7 via CanonSDKBase (IsConnected=True)
+   [camera-host] Camera connected: Integrated Webcam via WebCameraDevice (IsConnected=True)
+   [camera-host] Camera connected: USB Camera via WebCameraDevice (IsConnected=True)
+   [camera-host]   candidate: Canon EOS Rebel T7 [CanonSDKBase] IsConnected=True real=True prio=2
+   [camera-host]   candidate: Integrated Webcam [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   candidate: USB Camera [WebCameraDevice] IsConnected=True real=False prio=1
+   [camera-host]   _connectedDevice: CanonSDKBase
+   [camera-host] Device claimed by driver: CameraControl.Devices.Canon.CanonSDKBase
+   [camera-host] Camera sessions released
+   [camera-host] CameraHost exiting
+   --- end ---
+
+== What to do
+   1. The helper has crashed on this machine -- see the abnormal exit above.
+   2. The helper is healthy on its own -- if the app still fails, restart the app (see below).
+
+   Note: 'Try again' on that screen cannot recover once the helper
+   has exited -- the app only spawns it at startup. After fixing
+   anything above, CLOSE AND REOPEN the app.
+
+   Included a copy of camera-host.log in the report.
+**********************
+Windows PowerShell transcript end
+End time: 20261106130517
+**********************
