@@ -209,7 +209,40 @@ function defaultSettings() {
     // bad WB reading leaves evidence instead of being un-diagnosable after
     // the fact; retention is capped (see CALIBRATION_RETENTION below).
     calibrationDiagnosticsEnabled: true,
+    // One-time resets this install already carries -- see SETTINGS_RESETS.
+    // A fresh install starts with all of them, so its first Save can't be
+    // undone by a reset meant for older files.
+    appliedResets: SETTINGS_RESETS.map((r) => r.id),
   };
+}
+
+// One-time, fleet-wide resets of saved settings back to the build's defaults.
+// A saved settings.json always outranks defaultSettings(), so a changed default
+// never reaches a station that has ever pressed Save (gotcha #28). Each entry
+// runs once per station: on the first launch whose settings.json lacks its id,
+// the named keys are dropped (falling back to defaults) and the id recorded.
+// Admin choices made AFTER that launch are kept. Only add an entry for a
+// deliberate level-set -- it discards whatever each station had for those keys.
+const SETTINGS_RESETS = [
+  // 1.5.6 setup-phase level-set: calibration limits (WB Auto only, ISO
+  // 200-3200, f/5.6-16) and the revert-to camera defaults. cameraPresets are
+  // left alone -- they're the Bypass screen's free-choice tool.
+  { id: "camera-2026-11", keys: ["cameraLimits", "cameraDefaults"] },
+];
+
+// Returns true when anything was reset, so the caller can persist it.
+function applySettingsResets(saved) {
+  const done = Array.isArray(saved.appliedResets) ? saved.appliedResets : [];
+  let changed = false;
+  for (const r of SETTINGS_RESETS) {
+    if (done.includes(r.id)) continue;
+    for (const k of r.keys) delete saved[k];
+    done.push(r.id);
+    changed = true;
+    console.log(`[main] settings reset ${r.id}: ${r.keys.join(", ")} back to defaults`);
+  }
+  saved.appliedResets = done;
+  return changed;
 }
 
 // Nested settings objects merge key-by-key so a settings.json saved before a
@@ -231,7 +264,22 @@ function loadSettings() {
   let saved = {};
   // Strip a BOM first: Windows PowerShell 5.1 and older Notepad write one, and
   // JSON.parse rejecting the file would silently reset every saved setting.
-  try { saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8").replace(/^\uFEFF/, "")); } catch {}
+  let hadFile = false;
+  try {
+    saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8").replace(/^\uFEFF/, ""));
+    hadFile = true;
+  } catch {}
+  // Persist only the trimmed SAVED object, never the merged one: writing the
+  // merge would freeze the hostname-derived location number below. And never
+  // create a file that didn't exist -- a fresh install has nothing to reset.
+  if (hadFile && applySettingsResets(saved)) {
+    try {
+      fs.copyFileSync(settingsFile(), settingsFile() + ".before-reset");
+      fs.writeFileSync(settingsFile(), JSON.stringify(saved, null, 2));
+    } catch (e) {
+      console.log("[main] could not persist settings reset:", e.message);
+    }
+  }
   const defaults = defaultSettings();
   // Auto-fill the location NUMBER from the hostname only when nothing has been
   // saved yet -- once an admin has saved one (even one that happens to match

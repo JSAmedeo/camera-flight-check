@@ -29,9 +29,10 @@
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\reset-settings-keys.ps1 -Keys cameraLimits
-  The 1.5.6 rollout: stations that ever saved Settings froze the old (open)
-  camera limits, so the new Auto-only / ISO 200-3200 / f/5.6-16 defaults
-  never reach them without this. Run as the station's own Windows user.
+  Resets one station's camera limits by hand. Fleet-wide level-sets don't
+  need this any more -- add an entry to SETTINGS_RESETS in main.js and the
+  app does it once per station on first launch (1.5.6 does exactly that for
+  cameraLimits and cameraDefaults). Run as the station's own Windows user.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\reset-settings-keys.ps1 -WhatIf
