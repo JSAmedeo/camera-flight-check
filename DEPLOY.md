@@ -71,6 +71,7 @@ below: Kaseya should still run step 5 itself rather than invoking this file.
 
 | # | Step | Detail |
 |---|---|---|
+| 0 | Close the app if it's open | `taskkill /F /IM "Camera Flight Check.exe"` then `taskkill /F /IM CameraHost.exe` — "not found" errors are fine and mean it wasn't running |
 | 1 | Create the install folder | `C:\preflight-ops-check` |
 | 2 | Download the portable zip | from the FTP server, `0bk.net/chp/installers` |
 | 3 | Extract into the folder | contents go directly in `C:\preflight-ops-check` — the exe sits at the root, not in a subfolder |
@@ -78,6 +79,14 @@ below: Kaseya should still run step 5 itself rather than invoking this file.
 | 5 | Clear Mark of the Web | `Get-ChildItem "C:\preflight-ops-check" -Recurse -File \| Unblock-File` |
 
 Notes that matter for the procedure:
+
+- **Step 0 matters on every update, not just the first install.** Only one copy of
+  the app can run, so opening it while an older copy is still running (even
+  minimized) just brings the old copy forward, and the station keeps running the
+  old code until it's fully closed. That's what made a 1.5.6 update look like it
+  hadn't applied on a test machine (2026-11-10). A running copy also locks its
+  files, so extracting over it can fail part-way. Kill `CameraHost.exe` too: it's
+  the camera helper, and one left behind holds the camera's USB connection.
 
 - **Step 5 must run before the app is ever launched.** A zip that arrived over a
   network carries Windows' "Mark of the Web", and Windows propagates it to every
