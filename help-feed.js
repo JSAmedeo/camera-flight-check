@@ -152,7 +152,8 @@ function directoryPath(userDataDir) {
 // deliberately NOT a delete -- the file stays put so it can be looked at.
 function readDirectory(userDataDir) {
   try {
-    const parsed = JSON.parse(fs.readFileSync(directoryPath(userDataDir), "utf8"));
+    // BOM-tolerant: a pre-seeded copy may have been saved by PowerShell/Notepad
+    const parsed = JSON.parse(fs.readFileSync(directoryPath(userDataDir), "utf8").replace(/^\uFEFF/, ""));
     if (!parsed || !parsed.locations || typeof parsed.locations !== "object") return null;
     return parsed;
   } catch {

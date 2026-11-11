@@ -28,6 +28,12 @@
   Resets the Need Help content instead.
 
 .EXAMPLE
+  powershell -ExecutionPolicy Bypass -File scripts\reset-settings-keys.ps1 -Keys cameraLimits
+  The 1.5.6 rollout: stations that ever saved Settings froze the old (open)
+  camera limits, so the new Auto-only / ISO 200-3200 / f/5.6-16 defaults
+  never reach them without this. Run as the station's own Windows user.
+
+.EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\reset-settings-keys.ps1 -WhatIf
   Shows what would change without writing.
 #>
@@ -69,7 +75,11 @@ if ($PSCmdlet.ShouldProcess($SettingsPath, "remove $($found -join ', ')")) {
   $backup = "$SettingsPath.bak"
   Copy-Item -LiteralPath $SettingsPath -Destination $backup -Force
   foreach ($k in $found) { $json.PSObject.Properties.Remove($k) }
-  $json | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $SettingsPath -Encoding UTF8
+  # NOT Set-Content -Encoding UTF8: on Windows PowerShell 5.1 that writes a
+  # BOM, the app's JSON.parse rejects the file, and the station silently falls
+  # back to defaults for EVERY setting -- the opposite of what this is for.
+  $text = $json | ConvertTo-Json -Depth 10
+  [System.IO.File]::WriteAllText($SettingsPath, $text, (New-Object System.Text.UTF8Encoding $false))
   Write-Host ""
   Write-Host "Removed $($found.Count) key(s). Previous file kept as settings.json.bak"
   Write-Host "Everything else (location, station, paths, feed settings) is untouched."

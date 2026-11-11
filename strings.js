@@ -417,8 +417,13 @@ window.CFC_STRINGS = {
       isoDirBrighter: "brighter",
       apertureLabel: "Aperture",
       apertureChange: "Was f/{from} → stopped down to f/{to} for the remaining brightness",
+      apertureOpen: "Was f/{from} → opened up to f/{to} for the remaining brightness",
+      // a setting was outside this station's camera limits and was brought back inside
+      limitChange: "Was {from} → changed to {to} to stay within this station's camera limits",
       castNotFixedLabel: "Color cast — not changed",
       castNotFixed: "White balance is already at the {limit} preset this camera offers ({wb}). If photos still look {look}, check the set lighting.",
+      // used when the station's allowed white balance list (e.g. Auto only) is what stopped the fix
+      castNotFixedLocked: "White balance set to {wb}. If photos still look {look}, check the set lighting.",
       limitWarmest: "warmest",
       limitCoolest: "coolest",
       lookBlue: "blue",

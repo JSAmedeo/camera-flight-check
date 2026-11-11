@@ -352,59 +352,97 @@ function nearestWb(list, target) {
 // ISO first, then aperture; shutter stays (it barely affects strobe exposure).
 // `limits` (from admin Settings' cameraLimits) only ever narrows the camera's
 // own reported value tables — it never widens past what the camera supports.
+//
+// Limits are enforced, not just respected: a setting already outside them
+// (e.g. dialled in on the Camera Setting Bypass screen, which deliberately
+// ignores limits) is brought back inside even when the photo itself needed
+// no correction. Returns { plan, why } -- `why[key]` is "cast", "exposure" or
+// "limit", so the applied screen can say why each setting moved.
 function planCorrections(settings, analysis, limits) {
   limits = limits || {};
-  const plan = {};
-  const currentK = WB_KELVIN[settings.wb] || 5500;
-  // empirical: pull the WB assumption toward neutral based on measured warmth
-  const estimatedK = currentK / Math.pow(analysis.warmth, 0.6);
-  if (Math.abs(Math.log2(analysis.warmth)) > CAST_TOLERANCE && analysis.clipped < CLIP_LIMIT) {
+  const plan = {}, why = {};
+
+  // ---- white balance
+  const wbAllowed = (settings.wbValues || []).filter((wb) => !limits.allowedWb || limits.allowedWb.includes(wb));
+  const castSeen = Math.abs(Math.log2(analysis.warmth)) > CAST_TOLERANCE && analysis.clipped < CLIP_LIMIT;
+  if (castSeen) {
+    const currentK = WB_KELVIN[settings.wb] || 5500;
+    // empirical: pull the WB assumption toward neutral based on measured warmth
+    const estimatedK = currentK / Math.pow(analysis.warmth, 0.6);
     let bestWb = null, bestDiff = Infinity;
-    const wbCandidates = (settings.wbValues || []).filter((wb) => !limits.allowedWb || limits.allowedWb.includes(wb));
-    for (const wb of wbCandidates) {
+    for (const wb of wbAllowed) {
       const k = WB_KELVIN[wb];
       if (!k) continue;
       const d = Math.abs(k - estimatedK);
       if (d < bestDiff) { bestDiff = d; bestWb = wb; }
     }
-    if (bestWb && bestWb !== settings.wb) plan.wb = bestWb;
+    if (bestWb && bestWb !== settings.wb) { plan.wb = bestWb; why.wb = "cast"; }
   }
-  if (Math.abs(analysis.evDelta) >= EV_TOLERANCE) {
-    const curIso = parseFloat(settings.iso);
-    if (curIso > 0) {
-      // The driver's ISO table includes extended values real bodies don't accept
-      // (T7 lists 6/12/25/50) — writing one can wedge the camera. Stay in 100+,
-      // further narrowed by the admin's ISO limits if set.
-      const isoFloor = Math.max(100, limits.isoMin ?? 100);
-      const isoCeil = Math.min(25600, limits.isoMax ?? 25600);
-      const isoCandidates = (settings.isoValues || []).filter((v) => {
-        const n = parseFloat(v);
-        return n >= isoFloor && n <= isoCeil;
-      });
-      const newIso = nearestValue(isoCandidates, curIso * Math.pow(2, analysis.evDelta));
-      if (newIso && newIso !== settings.iso) plan.iso = newIso;
-      const isoAfter = parseFloat(newIso || settings.iso);
-      const remaining = analysis.evDelta - Math.log2(isoAfter / curIso);
-      const curN = parseFloat(settings.aperture);
-      if (Math.abs(remaining) >= 0.4 && curN > 0) {
-        // Only ever stop DOWN (higher f-number). Opening up may exceed what the
-        // lens can do at its current zoom (the table is not lens-aware) — leave
-        // brightening to ISO. Admin aperture-max further narrows the stop-down ceiling.
-        const target = curN * Math.pow(2, -remaining / 2);
-        if (target > curN) {
-          const apertureCeil = limits.apertureMax ?? Infinity;
-          const apertureFloor = Math.max(curN, limits.apertureMin ?? -Infinity);
-          const stopDownValues = (settings.apertureValues || []).filter((v) => {
-            const n = parseFloat(v);
-            return n >= apertureFloor && n <= apertureCeil;
-          });
-          const newN = nearestValue(stopDownValues, target);
-          if (newN && newN !== settings.aperture) plan.aperture = newN;
-        }
-      }
+  if (!plan.wb && limits.allowedWb && !limits.allowedWb.includes(settings.wb) && wbAllowed.length) {
+    // with a cast in the photo, "to remove the cast" tells the operator more
+    plan.wb = wbAllowed[0]; why.wb = castSeen ? "cast" : "limit";
+  }
+
+  // ---- exposure
+  const curIso = parseFloat(settings.iso);
+  const curN = parseFloat(settings.aperture);
+  if (!(curIso > 0)) return { plan, why };
+  const needEv = Math.abs(analysis.evDelta) >= EV_TOLERANCE ? analysis.evDelta : 0; // + = needs brighter
+
+  const apMin = limits.apertureMin ?? null;
+  const apMax = limits.apertureMax ?? null;
+  const apInRange = (n) => (apMin == null || n >= apMin) && (apMax == null || n <= apMax);
+  const apValues = (settings.apertureValues || []).filter((v) => apInRange(parseFloat(v)));
+
+  // An out-of-range aperture comes back inside first; the brightness that
+  // move adds or removes is folded into what ISO has to make up.
+  let startN = curN, ev = needEv;
+  if (curN > 0 && !apInRange(curN) && apValues.length) {
+    startN = parseFloat(nearestValue(apValues, curN));
+    ev -= 2 * Math.log2(curN / startN);
+  }
+
+  // The driver's ISO table includes extended values real bodies don't accept
+  // (T7 lists 6/12/25/50) — writing one can wedge the camera. Stay in 100+,
+  // further narrowed by the admin's ISO limits if set. Taking the nearest
+  // in-range value also pulls an out-of-range ISO back inside.
+  const isoFloor = Math.max(100, limits.isoMin ?? 100);
+  const isoCeil = Math.min(25600, limits.isoMax ?? 25600);
+  const isoCandidates = (settings.isoValues || []).filter((v) => {
+    const n = parseFloat(v);
+    return n >= isoFloor && n <= isoCeil;
+  });
+  const newIso = nearestValue(isoCandidates, curIso * Math.pow(2, ev));
+  if (newIso && newIso !== settings.iso) { plan.iso = newIso; why.iso = needEv ? "exposure" : "limit"; }
+  const isoAfter = parseFloat(newIso || settings.iso);
+  const isoMaxed = isoCandidates.length > 0 && isoAfter >= Math.max(...isoCandidates.map(parseFloat));
+  const remaining = ev - Math.log2(isoAfter / curIso);
+
+  // Aperture takes whatever ISO couldn't. Stopping DOWN is always allowed.
+  // Opening UP happens only once ISO is at its ceiling, and only when an admin
+  // aperture-min is set: the camera's table isn't lens-aware (a kit lens
+  // zoomed in can't reach the f/4.5 it lists), so the admin floor is what
+  // keeps the request inside what every station's lens can actually do.
+  let newN = startN;
+  if (startN > 0 && Math.abs(remaining) >= 0.4) {
+    const target = startN * Math.pow(2, -remaining / 2);
+    let options = [];
+    if (target > startN) {
+      options = apValues.filter((v) => parseFloat(v) >= startN);
+    } else if (isoMaxed && apMin != null) {
+      options = apValues.filter((v) => parseFloat(v) <= startN);
+    }
+    const pick = nearestValue(options, target);
+    if (pick) newN = parseFloat(pick);
+  }
+  if (curN > 0 && newN !== curN) {
+    const v = (settings.apertureValues || []).find((x) => parseFloat(x) === newN);
+    if (v && v !== settings.aperture) {
+      plan.aperture = v;
+      why.aperture = newN === startN && startN !== curN ? "limit" : newN < curN ? "open" : "exposure";
     }
   }
-  return plan;
+  return { plan, why };
 }
 
 // Electron IPC wraps thrown errors in noise — show operators just the message
@@ -1079,7 +1117,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
         return;
       }
 
-      const plan = planCorrections(camSettings, analysis, settings.cameraLimits);
+      const { plan, why } = planCorrections(camSettings, analysis, settings.cameraLimits);
       const before = {
         iso: camSettings.iso, wb: camSettings.wb,
         aperture: camSettings.aperture, shutter: camSettings.shutter
@@ -1096,7 +1134,7 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
       const refreshFailed = !after;
       if (!after) after = { ...camSettings, ...applied };
       setCamSettings(after);
-      setResult({ analysis, plan, applied, rejected, before, after, refreshFailed });
+      setResult({ analysis, plan, why, applied, rejected, before, after, refreshFailed });
       setStage("applied");
 
       saveDiagnostics({
@@ -1104,7 +1142,8 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
         box: { display: box, natural: nat },
         avg: analysis.avg, evDelta: analysis.evDelta, warmth: analysis.warmth,
         cameraSettingsBeforeAnalysis: camSettings,
-        plan, applied, rejected
+        cameraLimits: settings.cameraLimits,
+        plan, why, applied, rejected
       });
     } catch (e) {
       setCamError(errText(e));
@@ -1452,6 +1491,8 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
     changes.push({ label: S.camera.applied.uncalibratedChangedLabel, sub: S.camera.applied.uncalibratedChanged });
   } else if (result) {
     const { before, after, analysis, rejected } = result;
+    const why = result.why || {};
+    const limitSub = (from, to) => fmt(S.camera.applied.limitChange, { from, to });
     const evd = analysis.evDelta;
     const warmLog = Math.log2(analysis.warmth);
     const castWord = warmLog > 0 ? S.camera.applied.castWarm : S.camera.applied.castCool;
@@ -1473,14 +1514,18 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
     if (before.wb !== after.wb) {
       changes.push({
         label: S.camera.applied.wbLabel,
-        sub: fmt(S.camera.applied.wbChange, { from: before.wb, to: after.wb, cast: castWord })
+        sub: why.wb === "limit" ?
+        limitSub(before.wb, after.wb) :
+        fmt(S.camera.applied.wbChange, { from: before.wb, to: after.wb, cast: castWord })
       });
     }
     if (before.iso !== after.iso) {
       const stops = Math.log2(parseFloat(after.iso) / parseFloat(before.iso));
       changes.push({
         label: S.camera.applied.isoLabel,
-        sub: fmt(S.camera.applied.isoChange, {
+        sub: why.iso === "limit" ?
+        limitSub(before.iso, after.iso) :
+        fmt(S.camera.applied.isoChange, {
           from: before.iso, to: after.iso,
           n: Math.abs(stops).toFixed(1), s: Math.abs(stops) >= 1.05 ? "s" : "",
           dir: stops < 0 ? S.camera.applied.isoDirDarker : S.camera.applied.isoDirBrighter
@@ -1490,15 +1535,22 @@ function ScreenCamera({ onNext, onBack, onSkip, settings, run }) {
     if (before.aperture !== after.aperture) {
       changes.push({
         label: S.camera.applied.apertureLabel,
-        sub: fmt(S.camera.applied.apertureChange, { from: before.aperture, to: after.aperture })
+        sub: why.aperture === "limit" ?
+        limitSub("f/" + before.aperture, "f/" + after.aperture) :
+        fmt(why.aperture === "open" ? S.camera.applied.apertureOpen : S.camera.applied.apertureChange,
+        { from: before.aperture, to: after.aperture })
       });
     }
     // Findings we could NOT fix deserve a row too — never leave a found issue unexplained.
     if (Math.abs(warmLog) > CAST_TOLERANCE && analysis.clipped < CLIP_LIMIT && before.wb === after.wb && !(rejected && rejected.wb)) {
       const needWarmer = warmLog < 0; // image is cool → needs a warmer WB setting
+      // When this station's allowed WB list is what stopped us (e.g. Auto
+      // only), "already at the warmest preset this camera offers" would be
+      // false -- the camera has others, they just aren't allowed here.
+      const wbLocked = settings.cameraLimits && settings.cameraLimits.allowedWb;
       changes.push({
         label: S.camera.applied.castNotFixedLabel,
-        sub: fmt(S.camera.applied.castNotFixed, {
+        sub: fmt(wbLocked ? S.camera.applied.castNotFixedLocked : S.camera.applied.castNotFixed, {
           limit: needWarmer ? S.camera.applied.limitWarmest : S.camera.applied.limitCoolest,
           wb: before.wb,
           look: needWarmer ? S.camera.applied.lookBlue : S.camera.applied.lookOrange
@@ -1960,13 +2012,17 @@ function ScreenTestPhoto({ onNext, onBack, onSkip, settings }) {
           plan.iso = newIso;
           labels.push(`ISO ${camSettings.iso} → ${newIso}`);
         }
-        // darkening beyond ISO's floor → stop the aperture down
+        // darkening beyond ISO's floor → stop the aperture down; brightening
+        // beyond ISO's ceiling → open it up, same rule as planCorrections
+        // (only with an admin aperture-min set, since the table isn't lens-aware)
         const isoAfter = parseFloat(newIso || camSettings.iso);
         const remaining = ev - Math.log2(isoAfter / curIso);
         const curN = parseFloat(camSettings.aperture);
-        if (remaining <= -0.4 && curN > 0) {
-          const apertureCeil = limits.apertureMax ?? Infinity;
-          const apertureFloor = Math.max(curN, limits.apertureMin ?? -Infinity);
+        const isoMaxed = isoCandidates.length > 0 && isoAfter >= Math.max(...isoCandidates.map(parseFloat));
+        const canOpen = remaining >= 0.4 && isoMaxed && limits.apertureMin != null;
+        if ((remaining <= -0.4 || canOpen) && curN > 0) {
+          const apertureCeil = remaining < 0 ? (limits.apertureMax ?? Infinity) : curN;
+          const apertureFloor = remaining < 0 ? Math.max(curN, limits.apertureMin ?? -Infinity) : limits.apertureMin;
           const stopDownValues = (camSettings.apertureValues || []).filter((v) => {
             const n = parseFloat(v);
             return n >= apertureFloor && n <= apertureCeil;
@@ -3824,7 +3880,7 @@ function SimpleApp() {
     paths: { completionLogs: "", testPhotos: "", diagnostics: "" },
     skipReasonPrompt: true,
     skipReasons: ["Running Late", "Completed Earlier", "Equipment Issue", "Other"],
-    cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
+    cameraLimits: { allowedWb: ["Auto"], isoMin: 200, isoMax: 3200, apertureMin: 5.6, apertureMax: 16 },
     cameraDefaults: { iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" },
     cameraPresets: [{ id: "baseline", name: "Baseline Default Settings", iso: "400", shutter: "1/125", aperture: "7", wb: "Auto" }],
     overlay: { ...DEFAULT_OVERLAY },

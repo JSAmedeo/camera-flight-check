@@ -120,7 +120,11 @@ function defaultSettings() {
     // triggers the free-text box in SkipReasonModal by text match, not
     // position, so reordering/renaming/removing it is safe.
     skipReasons: ["Running Late", "Completed Earlier", "Equipment Issue", "Other"],
-    cameraLimits: { allowedWb: null, isoMin: null, isoMax: null, apertureMin: null, apertureMax: null },
+    // Fences what calibration (grey card + Test Photo color fixes) may write.
+    // Camera Setting Bypass deliberately ignores these. Set 2026-11-10: WB Auto
+    // only, ISO 200-3200, f/5.6-16 -- 5.6 is the widest every kit lens reaches
+    // at any zoom, and the floor that lets calibration open up once ISO is maxed.
+    cameraLimits: { allowedWb: ["Auto"], isoMin: 200, isoMax: 3200, apertureMin: 5.6, apertureMax: 16 },
     // The grey-card escape hatch (REMEDIATION-PLAN.md CFC-04) reverts to
     // these instead of leaving the camera at whatever it happened to be set
     // to when a reading can't be trusted -- a known-good starting point for
@@ -225,7 +229,9 @@ function settingsFile() {
 
 function loadSettings() {
   let saved = {};
-  try { saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8")); } catch {}
+  // Strip a BOM first: Windows PowerShell 5.1 and older Notepad write one, and
+  // JSON.parse rejecting the file would silently reset every saved setting.
+  try { saved = JSON.parse(fs.readFileSync(settingsFile(), "utf8").replace(/^\uFEFF/, "")); } catch {}
   const defaults = defaultSettings();
   // Auto-fill the location NUMBER from the hostname only when nothing has been
   // saved yet -- once an admin has saved one (even one that happens to match
