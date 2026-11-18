@@ -60,6 +60,9 @@ const IGNORES = [
   "^/field-test logs",
   "^/location-json-example\\.json$",
   "^/full-location-json-example\\.json$",
+  // IT's Kaseya scripts (download URLs, deploy internals) and any harvested
+  // station logs pulled down next to them -- IT tooling, never station-side
+  "^/kaseya-procedure-files",
   // internal docs
   "^/CLAUDE\\.md$",
   "^/CONTEXT\\.md$",

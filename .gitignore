@@ -27,3 +27,7 @@ sessions/
 # Full live location feed sample (2.3MB) -- contains sales figures, contract
 # terms and commission notes. Kept locally as a test fixture, never committed.
 full-location-json-example.json
+
+# Station logs pulled back by the Kaseya harvest procedure -- real field data
+# (run logs, settings, grey-card analyses). The scripts beside them are source.
+kaseya-procedure-files/*.zip
