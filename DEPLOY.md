@@ -208,13 +208,14 @@ Notes that matter for the procedure:
 - **Harvested zips are real field data.** Zips saved into `kaseya-procedure-files/`
   are gitignored, and the folder is excluded from the packaged build in
   `scripts/dist.js`. Keep it that way.
-- **History before a station's last update may be gone.** The deploy script
-  (`Deploy-PreflightOpsCheck.ps1`, line 168) clears `C:\preflight-ops-check` on
-  every update, keeping only `deploy.log` and `installed-version.txt`. That
-  deletes `Logs\` and `Diagnostics\`. `check-runs.jsonl` is in AppData and isn't
-  affected. A fix to keep `Logs`, `Diagnostics`, `Photos` and
-  `location-directory.json` was handed to the deploy procedure's owner on
-  2026-11-18. Remove this note once it's in.
+- **History from before 2026-11-20 may be gone.** Until then, the deploy script
+  cleared `C:\preflight-ops-check` on every update, keeping only `deploy.log` and
+  `installed-version.txt`. That deleted `Logs\` and `Diagnostics\`, so a station's
+  session logs and helper log only go back to its last update. `check-runs.jsonl`
+  is in AppData and was never affected. `Deploy-PreflightOpsCheck.ps1` now also
+  keeps `Logs`, `Diagnostics`, `Photos` and `location-directory.json` (commit
+  `ed80519`). It only takes effect once that copy is uploaded to VSA as
+  `VSASharedFiles\Deploy-PreflightOpsCheck.ps1`.
 
 ## Station PC requirements
 
