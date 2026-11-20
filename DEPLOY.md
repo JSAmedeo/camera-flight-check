@@ -128,6 +128,94 @@ Notes that matter for the procedure:
   `Camera Flight Check.exe` → Properties → Details → ProductVersion.
 - **To remove it completely**, delete the folder and the shortcut.
 
+## Collecting logs from the field (Kaseya)
+
+Until the app posts to the company API, every station's logs exist only on that
+station. The **Pre-Flight Harvest Logs** procedure pulls them back as one zip per
+machine. It uses the same pattern as the deploy procedure: the PowerShell does the
+work and the Kaseya steps just deliver it, run it and collect the result. The
+script is [kaseya-procedure-files/Harvest-PreflightLogs.ps1](kaseya-procedure-files/Harvest-PreflightLogs.ps1),
+uploaded to VSA as `VSASharedFiles\Harvest-PreflightLogs.ps1`. Verified end to end on
+PGI-TEST01, 2026-11-18.
+
+### What it collects
+
+It copies these files and never moves or deletes them:
+
+| Item | Path on the station |
+|---|---|
+| Run log, every run on the machine | `C:\Users\<user>\AppData\Roaming\Camera Flight Check\check-runs.jsonl` |
+| Station settings | `...\Camera Flight Check\settings.json` |
+| Pre-1.5.6-reset backup | `...\Camera Flight Check\settings.json.before-reset` (only where it exists) |
+| Camera helper log (fallback) | `...\Camera Flight Check\camera-host.log` (only where Diagnostics wasn't usable) |
+| Crash dumps | `...\Camera Flight Check\Crashpad\reports\` (only if the app crashed) |
+| Installed build | `C:\preflight-ops-check\version`, `installed-version.txt`, `deploy.log` |
+| Per-run session logs | `C:\preflight-ops-check\Logs\sessions\*.jsonl` |
+| Camera helper log | `C:\preflight-ops-check\Diagnostics\camera-host.log` |
+| Grey-card attempts | `C:\preflight-ops-check\Diagnostics\calibrations\<run>\analysis.json` |
+| Helper diagnostic reports | `C:\Users\*\Desktop\camera-helper-report_*\` (only if one was run with `-Report`) |
+
+- **It checks every profile under `C:\Users`**, not just `chp`.
+- **It reads each profile's `settings.json`** for the Completion Logs and
+  Diagnostics folders, so it follows an admin who moved them in Settings > File
+  Output Paths. The defaults above are always checked as well.
+- **There are no test photos to collect.** Nothing in the app saves them yet.
+
+Each zip opens to a single `COMPUTERNAME_yyyy-MM-dd_HHmm` folder, so any number of
+them can be extracted side by side. Inside, `manifest.txt` lists what was collected,
+what wasn't on the machine (normal for most of the "only where" rows) and anything
+that couldn't be copied.
+
+### Procedure steps
+
+All paths are in the agent's temp folder, `#vAgentConfiguration.agentTempSecureDir#`,
+shown below as `<tmp>`.
+
+| # | Step | Settings |
+|---|---|---|
+| 1 | `writeFile` | `VSASharedFiles\Harvest-PreflightLogs.ps1` → `<tmp>\Harvest-PreflightLogs.ps1` |
+| 2 | `executeShellCommandToVariable` | System, 64-bit: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<tmp>\Harvest-PreflightLogs.ps1" -OutFile "<tmp>\PreflightLogs.zip"` |
+| 3 | `writeProcedureLogEntry` | `#global:cmdresults#` (the harvest's own output) |
+| 4 | `executeShellCommandToVariable` | System, 64-bit: `powershell.exe -NoProfile -Command "[Console]::Write((Get-Date -Format yyyy-MM-dd_HHmm))"` |
+| 5 | `getFile` | `<tmp>\PreflightLogs.zip` → `PreflightLogs-#vMachine.ComputerName#-#global:cmdresults#.zip`, "Save existing version then get file without alert" |
+| 6 | `deleteFile` | `<tmp>\Harvest-PreflightLogs.ps1` |
+| 7 | `deleteFile` | `<tmp>\PreflightLogs.zip` |
+| 8 | `writeProcedureLogEntry` | `Stamp: #global:cmdresults#` |
+
+The uploaded file lands in each machine's GetFiles folder on the VSA server, named
+like `PreflightLogs-PGI-TEST01-2026-11-18_1526.zip`.
+
+Notes that matter for the procedure:
+
+- **It's safe to run during a shift.** It never closes the app or touches the
+  camera, unlike the deploy. Run as System, it has no window on the operator's
+  screen. It runs at idle CPU priority. It reads files in a sharing mode that lets
+  the app keep writing to them. A plain `Copy-Item` blocks the app's run-log
+  write, and the app doesn't retry that write, so the run's record would be lost.
+- **Step 4 overwrites `#global:cmdresults#` with just the date stamp.** That's why
+  step 3 has to log the harvest output before it. `[Console]::Write` (not
+  `Write-Output`) keeps a line break out of the file name.
+- **Steps 2 and 4 must run as System, not User.** With User, a station with nobody
+  logged in fails the step and the zip is never uploaded.
+- **Size: about 7–100 KB per station with the default `-Calibrations Json`.** That's
+  fine over a venue's cellular router. Adding `-Calibrations All` to step 2 also
+  collects the grey-card photos, up to about 60 MB per station. Keep that for a
+  single station you're troubleshooting, not a fleet sweep. `-Calibrations None`
+  skips grey-card attempts entirely.
+- **Check a run in the procedure log.** The harvest output should end with
+  `Zip written: ... (NN KB)` and `=== Log harvest completed ===`, and the `Stamp:`
+  line should show only the date with nothing after it.
+- **Harvested zips are real field data.** Zips saved into `kaseya-procedure-files/`
+  are gitignored, and the folder is excluded from the packaged build in
+  `scripts/dist.js`. Keep it that way.
+- **History before a station's last update may be gone.** The deploy script
+  (`Deploy-PreflightOpsCheck.ps1`, line 168) clears `C:\preflight-ops-check` on
+  every update, keeping only `deploy.log` and `installed-version.txt`. That
+  deletes `Logs\` and `Diagnostics\`. `check-runs.jsonl` is in AppData and isn't
+  affected. A fix to keep `Logs`, `Diagnostics`, `Photos` and
+  `location-directory.json` was handed to the deploy procedure's owner on
+  2026-11-18. Remove this note once it's in.
+
 ## Station PC requirements
 
 | Requirement | Notes |
