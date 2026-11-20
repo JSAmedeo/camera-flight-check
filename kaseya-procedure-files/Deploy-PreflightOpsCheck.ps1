@@ -10,6 +10,9 @@
     4. Creates a shortcut on the Public desktop (shows for every user)
     5. Optionally downloads the training videos to C:\Options
 
+    An update replaces the app but keeps the app's own data in C:\preflight-ops-check: Logs\,
+    Diagnostics\, Photos\ and location-directory.json, plus deploy.log and installed-version.txt.
+
     Version check: the installed zip name is saved in C:\preflight-ops-check\installed-version.txt.
     If the newest zip on the server matches it, the app is not downloaded, and videos that are
     already present (same size) are skipped.
@@ -164,8 +167,12 @@ try {
         $top = @(Get-ChildItem -Path $Staging -Force)
         if ($top.Count -eq 1 -and $top[0].PSIsContainer) { $source = $top[0].FullName }
 
-        # Clear the old version (keeps the log and version file; also removes the old app\ folder)
-        Get-ChildItem -Path $Root -Force | Where-Object { $_.FullName -ne $Log -and $_.FullName -ne $VersionFile } | Remove-Item -Recurse -Force
+        # Clear the old version (keeps the log, version file and the app's own data folders; also
+        # removes the old app\ folder). Logs\ and Diagnostics\ hold station history the log harvest
+        # collects, and location-directory.json is the cached mall list for stations offline at launch.
+        # The release zip never contains these names, so the extract below can't clash with them.
+        $Keep = @($Log, $VersionFile) + ('Logs', 'Diagnostics', 'Photos', 'location-directory.json' | ForEach-Object { Join-Path $Root $_ })
+        Get-ChildItem -Path $Root -Force | Where-Object { $Keep -notcontains $_.FullName } | Remove-Item -Recurse -Force
 
         Write-Log "Extracting to $Root"
         Get-ChildItem -Path $source -Force | Move-Item -Destination $Root -Force
